@@ -23,7 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = mysqli_stmt_get_result($stmt);
         $user = mysqli_fetch_assoc($result);
 
-        if ($user && password_verify($pass, $user['password'])) {
+        // DEVELOPMENT MODE ONLY
+        // Verifikasi password menggunakan perbandingan string biasa (plain text).
+        // Aktifkan kembali password_verify() sebelum deployment ke production:
+        //   if ($user && password_verify($pass, $user['password'])) {
+        if ($user && $pass === $user['password']) {
             $_SESSION['user_id']   = $user['id'];
             $_SESSION['nama']      = $user['nama_lengkap'];
             $_SESSION['role']      = $user['role'];

@@ -15,6 +15,8 @@
                 <h4>Navigasi</h4>
                 <ul>
                     <li><a href="<?= $baseUrl ?? '' ?>index.php">Beranda</a></li>
+                    <li><a href="<?= $baseUrl ?? '' ?>about.php">Tentang Kami</a></li>
+                    <li><a href="<?= $baseUrl ?? '' ?>contact.php">Kontak</a></li>
                     <li><a href="<?= $baseUrl ?? '' ?>booking.php">Booking</a></li>
                     <li><a href="<?= $baseUrl ?? '' ?>login.php">Masuk</a></li>
                     <li><a href="<?= $baseUrl ?? '' ?>register.php">Daftar</a></li>

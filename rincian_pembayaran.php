@@ -40,25 +40,85 @@ mysqli_stmt_bind_param($stmtP, 'i', $booking_id);
 mysqli_stmt_execute($stmtP);
 $payment = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtP));
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment) {
-    $metode       = $_POST['metode_bayar'] ?? '';
-    $jumlah       = (float)($booking['total_harga']);
-    $bukti        = '';
+// Handle AJAX POST from payment confirmation modal
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment
+    && !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
+    && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest'
+) {
+    header('Content-Type: application/json');
+
+    $metode = $_POST['metode_bayar'] ?? '';
+    $jumlah = (float)($booking['total_harga']);
+    $bukti  = '';
 
     if (empty($metode)) {
-        $errors[] = 'Pilih metode pembayaran.';
+        http_response_code(422);
+        echo json_encode(['success' => false, 'message' => 'Pilih metode pembayaran.']);
+        exit;
     }
 
     if ($metode === 'Transfer') {
-        // Upload bukti transfer
         if (!isset($_FILES['bukti_transfer']) || $_FILES['bukti_transfer']['error'] !== UPLOAD_ERR_OK) {
-            $errors[] = 'Bukti transfer wajib diupload untuk metode Transfer.';
+            http_response_code(422);
+            echo json_encode(['success' => false, 'message' => 'Bukti transfer wajib diupload untuk metode Transfer.']);
+            exit;
+        }
+        $file = $_FILES['bukti_transfer'];
+        $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $allowed = ['jpg', 'jpeg', 'png', 'pdf'];
+        if (!in_array($ext, $allowed)) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'message' => 'Format file tidak valid. Gunakan JPG, PNG, atau PDF.']);
+            exit;
+        }
+        if ($file['size'] > 2 * 1024 * 1024) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'message' => 'Ukuran file maksimal 2MB.']);
+            exit;
+        }
+        $uploadDir = 'uploads/bukti_transfer/';
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+        $newName = 'bukti_' . $booking_id . '_' . time() . '.' . $ext;
+        if (!move_uploaded_file($file['tmp_name'], $uploadDir . $newName)) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Gagal mengupload file. Coba lagi.']);
+            exit;
+        }
+        $bukti = $newName;
+    }
+
+    $stmt2 = mysqli_prepare($conn,
+        "INSERT INTO payments (booking_id, jumlah_bayar, metode_bayar, bukti_transfer) VALUES (?, ?, ?, ?)"
+    );
+    mysqli_stmt_bind_param($stmt2, 'idss', $booking_id, $jumlah, $metode, $bukti);
+    if (mysqli_stmt_execute($stmt2)) {
+        if ($metode === 'Cash') {
+            mysqli_query($conn, "UPDATE bookings SET status='confirmed' WHERE id=$booking_id");
+        }
+        echo json_encode(['success' => true]);
+    } else {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Gagal menyimpan pembayaran.']);
+    }
+    exit;
+}
+
+// Fallback non-AJAX POST (legacy safety)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment) {
+    $metode = $_POST['metode_bayar'] ?? '';
+    $jumlah = (float)($booking['total_harga']);
+    $bukti  = '';
+
+    if (empty($metode)) $errors[] = 'Pilih metode pembayaran.';
+
+    if ($metode === 'Transfer') {
+        if (!isset($_FILES['bukti_transfer']) || $_FILES['bukti_transfer']['error'] !== UPLOAD_ERR_OK) {
+            $errors[] = 'Bukti transfer wajib diupload.';
         } else {
             $file = $_FILES['bukti_transfer'];
             $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-            $allowed = ['jpg', 'jpeg', 'png', 'pdf'];
-            if (!in_array($ext, $allowed)) {
-                $errors[] = 'Format file bukti tidak valid. Gunakan JPG, PNG, atau PDF.';
+            if (!in_array($ext, ['jpg','jpeg','png','pdf'])) {
+                $errors[] = 'Format file tidak valid.';
             } elseif ($file['size'] > 2 * 1024 * 1024) {
                 $errors[] = 'Ukuran file maksimal 2MB.';
             } else {
@@ -68,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment) {
                 if (move_uploaded_file($file['tmp_name'], $uploadDir . $newName)) {
                     $bukti = $newName;
                 } else {
-                    $errors[] = 'Gagal mengupload file. Coba lagi.';
+                    $errors[] = 'Gagal mengupload file.';
                 }
             }
         }
@@ -76,17 +136,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment) {
 
     if (empty($errors)) {
         $stmt2 = mysqli_prepare($conn,
-            "INSERT INTO payments (booking_id, jumlah_bayar, metode_bayar, bukti_transfer)
-             VALUES (?, ?, ?, ?)"
+            "INSERT INTO payments (booking_id, jumlah_bayar, metode_bayar, bukti_transfer) VALUES (?, ?, ?, ?)"
         );
         mysqli_stmt_bind_param($stmt2, 'idss', $booking_id, $jumlah, $metode, $bukti);
         if (mysqli_stmt_execute($stmt2)) {
-            // Update status booking ke confirmed jika cash
             if ($metode === 'Cash') {
                 mysqli_query($conn, "UPDATE bookings SET status='confirmed' WHERE id=$booking_id");
             }
             $success = 'Pembayaran berhasil dicatat!';
-            // Refresh data
             mysqli_stmt_execute($stmtP);
             $payment = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtP));
         } else {
@@ -121,7 +178,7 @@ $durasi = (strtotime($booking['jam_selesai']) - strtotime($booking['jam_mulai'])
             <?php endif; ?>
 
             <!-- Detail Booking -->
-            <div class="card">
+            <div class="card fade-up">
                 <h2>Detail Booking</h2>
                 <div class="detail-box">
                     <div class="detail-row">
@@ -171,9 +228,9 @@ $durasi = (strtotime($booking['jam_selesai']) - strtotime($booking['jam_mulai'])
                 </div>
             </div>
 
-            <!-- Status Pembayaran -->
+            <!-- Status Pembayaran / Form -->
             <?php if ($payment): ?>
-                <div class="card">
+                <div class="card fade-up">
                     <h2>Status Pembayaran</h2>
                     <div class="detail-box">
                         <div class="detail-row">
@@ -208,46 +265,47 @@ $durasi = (strtotime($booking['jam_selesai']) - strtotime($booking['jam_mulai'])
                         </div>
                         <?php endif; ?>
                     </div>
-                    <div class="alert alert-info" style="margin-top: 12px;">
+                    <div class="alert alert-info" style="margin-top: 16px;">
                         Pembayaran Anda sedang dalam proses verifikasi admin. Terima kasih!
                     </div>
                 </div>
             <?php else: ?>
-                <!-- Form Upload Pembayaran -->
-                <div class="card">
+                <!-- Form Upload Pembayaran — submit via modal confirmation -->
+                <div class="card fade-up">
                     <h2>Konfirmasi Pembayaran</h2>
-                    <form method="POST" action="rincian_pembayaran.php?booking_id=<?= $booking_id ?>"
-                          enctype="multipart/form-data" id="form-payment">
+                    <form id="form-payment" novalidate enctype="multipart/form-data">
 
                         <div class="form-group">
                             <label for="metode_bayar">Metode Pembayaran</label>
-                            <select id="metode_bayar" name="metode_bayar" required
-                                    onchange="toggleBukti(this.value)">
+                            <select id="metode_bayar" name="metode_bayar" required onchange="toggleBukti(this.value)">
                                 <option value="">-- Pilih Metode --</option>
-                                <option value="Transfer" <?= ($_POST['metode_bayar'] ?? '') === 'Transfer' ? 'selected' : '' ?>>Transfer Bank</option>
-                                <option value="Cash" <?= ($_POST['metode_bayar'] ?? '') === 'Cash' ? 'selected' : '' ?>>Cash (Bayar di Tempat)</option>
+                                <option value="Transfer">Transfer Bank</option>
+                                <option value="Cash">Cash (Bayar di Tempat)</option>
                             </select>
                         </div>
 
-                        <div id="area-bukti" style="display: <?= ($_POST['metode_bayar'] ?? '') === 'Transfer' ? 'block' : 'none' ?>;">
+                        <div id="area-bukti" style="display:none;">
                             <div class="form-group">
                                 <label for="bukti_transfer">Upload Bukti Transfer</label>
                                 <div class="upload-area">
-                                    <input type="file" id="bukti_transfer" name="bukti_transfer"
-                                           accept=".jpg,.jpeg,.png,.pdf">
-                                    <p style="margin-top: 8px;">Format: JPG, PNG, PDF – Maks. 2MB</p>
+                                    <span class="material-symbols-outlined" style="font-size:2rem; color:var(--blue); opacity:.6;">upload_file</span>
+                                    <p>Klik atau seret file ke sini</p>
+                                    <input type="file" id="bukti_transfer" name="bukti_transfer" accept=".jpg,.jpeg,.png,.pdf">
+                                    <p style="margin-top:6px;">Format: JPG, PNG, PDF – Maks. 2MB</p>
                                 </div>
                             </div>
                             <div class="alert alert-info">
                                 <strong>Info Transfer:</strong><br>
-                                Bank BCA – 1234567890 – a/n MyPadel<br>
+                                Bank BCA – 1234567890 – a/n PadelClub<br>
                                 Nominal: Rp <?= number_format($booking['total_harga'], 0, ',', '.') ?>
                             </div>
                         </div>
 
                         <div style="display: flex; gap: 10px; margin-top: 8px;">
-                            <a href="dashboarduser.php" class="btn btn-secondary">Nanti Saja</a>
-                            <button type="submit" class="btn btn-success" id="btn-bayar" style="flex: 1;">
+                            <a href="dashboarduser.php" class="btn btn-outline">Nanti Saja</a>
+                            <button type="button" class="btn btn-success" id="btn-show-pay-modal" style="flex:1;"
+                                    onclick="showPaymentConfirmModal()">
+                                <span class="material-symbols-outlined">payments</span>
                                 Konfirmasi Pembayaran
                             </button>
                         </div>
@@ -262,10 +320,118 @@ $durasi = (strtotime($booking['jam_selesai']) - strtotime($booking['jam_mulai'])
     </div>
 </section>
 
+<!-- ═══════════════════════════════════════════════
+     MODAL 3 — PAYMENT CONFIRMATION
+════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-payment-confirm" role="dialog" aria-modal="true" aria-labelledby="modal-pay-title" style="display:none;">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 id="modal-pay-title">Konfirmasi Pembayaran</h3>
+            <button class="modal-close" onclick="closeModal('modal-payment-confirm')" aria-label="Tutup">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Apakah Anda yakin ingin mengirimkan konfirmasi pembayaran ini?</p>
+            <div class="modal-summary-card">
+                <div class="detail-row">
+                    <span class="label">Booking</span>
+                    <span class="value">#<?= $booking_id ?> — <?= htmlspecialchars($booking['nama_lapangan']) ?></span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Metode</span>
+                    <span class="value" id="modal-pay-metode">–</span>
+                </div>
+                <div class="detail-row total">
+                    <span class="label">Total</span>
+                    <span class="value">Rp <?= number_format($booking['total_harga'], 0, ',', '.') ?></span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('modal-payment-confirm')">Batal</button>
+            <button class="btn btn-success" id="btn-confirm-payment" onclick="submitPayment()">
+                <span class="material-symbols-outlined">check_circle</span>
+                Konfirmasi Pembayaran
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     MODAL 4 — PAYMENT SUCCESS
+════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-payment-success" role="dialog" aria-modal="true" aria-labelledby="modal-pay-success-title" style="display:none;">
+    <div class="modal-box" style="max-width:420px;">
+        <div class="modal-success-body">
+            <div class="success-circle">
+                <span class="material-symbols-outlined checkmark" style="font-variation-settings:'FILL' 1,'wght' 600,'GRAD' 0,'opsz' 24;">check_circle</span>
+            </div>
+            <h3 id="modal-pay-success-title">Pembayaran Dikonfirmasi!</h3>
+            <p>Konfirmasi pembayaran Anda telah berhasil terkirim. Tim kami akan segera memverifikasi pembayaran Anda.</p>
+            <button class="btn btn-primary btn-block" id="btn-done-payment">
+                <span class="material-symbols-outlined">home</span>
+                Kembali ke Dashboard
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
 function toggleBukti(val) {
     document.getElementById('area-bukti').style.display = val === 'Transfer' ? 'block' : 'none';
 }
+
+function showPaymentConfirmModal() {
+    const metode = document.getElementById('metode_bayar');
+    if (!metode || !metode.value) {
+        showToast('Silakan pilih metode pembayaran terlebih dahulu.', 'warning');
+        return;
+    }
+    if (metode.value === 'Transfer') {
+        const bukti = document.getElementById('bukti_transfer');
+        if (!bukti || !bukti.files.length) {
+            showToast('Silakan upload bukti transfer terlebih dahulu.', 'warning');
+            return;
+        }
+    }
+    document.getElementById('modal-pay-metode').textContent = metode.value === 'Transfer' ? 'Transfer Bank' : 'Cash di Tempat';
+    openModal('modal-payment-confirm');
+}
+
+function submitPayment() {
+    const btn = document.getElementById('btn-confirm-payment');
+    btn.classList.add('btn-loading');
+    btn.disabled = true;
+
+    const formData = new FormData(document.getElementById('form-payment'));
+
+    fetch('rincian_pembayaran.php?booking_id=<?= $booking_id ?>', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.classList.remove('btn-loading');
+        btn.disabled = false;
+
+        if (data.success) {
+            closeModal('modal-payment-confirm');
+            setTimeout(() => openModal('modal-payment-success'), 350);
+        } else {
+            closeModal('modal-payment-confirm');
+            showToast(data.message || 'Terjadi kesalahan. Silakan coba lagi.', 'error');
+        }
+    })
+    .catch(() => {
+        btn.classList.remove('btn-loading');
+        btn.disabled = false;
+        showToast('Koneksi bermasalah. Silakan coba lagi.', 'error');
+    });
+}
+
+document.getElementById('btn-done-payment') && document.getElementById('btn-done-payment').addEventListener('click', function() {
+    window.location.href = 'dashboarduser.php';
+});
 </script>
 
 <?php include 'includes/footer.php'; ?>
