@@ -1,10 +1,19 @@
 <?php
 session_start();
 if (isset($_SESSION['user_id'])) {
-    header('Location: index.php');
-    exit;
+    if ($_SESSION['role'] === 'admin') {
+        header('Location: admin/dashboard.php');
+        exit;
+    } elseif ($_SESSION['role'] === 'kasir') {
+        header('Location: kasir/dashboard.php');
+        exit;
+    } else {
+        header('Location: index.php');
+        exit;
+    }
 }
-require_once 'config/koneksi.php';
+require_once __DIR__ . '/config/koneksi.php';
+/** @var mysqli $conn */
 
 $pageTitle = 'Masuk';
 $baseUrl = '';
@@ -18,33 +27,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Email dan password wajib diisi.';
     } else {
         $stmt = mysqli_prepare($conn, "SELECT id, nama_lengkap, password, role FROM users WHERE email = ?");
-        mysqli_stmt_bind_param($stmt, 's', $email);
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
-        $user = mysqli_fetch_assoc($result);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 's', $email);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $user = mysqli_fetch_assoc($result);
 
-        // DEVELOPMENT MODE ONLY
-        // Verifikasi password menggunakan perbandingan string biasa (plain text).
-        // Aktifkan kembali password_verify() sebelum deployment ke production:
-        //   if ($user && password_verify($pass, $user['password'])) {
-        if ($user && $pass === $user['password']) {
-            $_SESSION['user_id']   = $user['id'];
-            $_SESSION['nama']      = $user['nama_lengkap'];
-            $_SESSION['role']      = $user['role'];
+            // DEVELOPMENT MODE ONLY
+            // Verifikasi password menggunakan perbandingan string biasa (plain text).
+            // Aktifkan kembali password_verify() sebelum deployment ke production:
+            //   if ($user && password_verify($pass, $user['password'])) {
+            if ($user && $pass === $user['password']) {
+                $_SESSION['user_id']   = $user['id'];
+                $_SESSION['nama']      = $user['nama_lengkap'];
+                $_SESSION['role']      = $user['role'];
 
-            if ($user['role'] === 'admin') {
-                header('Location: dashboardadmin.php');
+                if ($user['role'] === 'admin') {
+                    header('Location: admin/dashboard.php');
+                } elseif ($user['role'] === 'kasir') {
+                    header('Location: kasir/dashboard.php');
+                } else {
+                    header('Location: dashboarduser.php');
+                }
+                mysqli_stmt_close($stmt);
+                exit;
             } else {
-                header('Location: dashboarduser.php');
+                $error = 'Email atau password salah.';
             }
-            exit;
+            mysqli_stmt_close($stmt);
         } else {
-            $error = 'Email atau password salah.';
+            $error = 'Gagal memproses login: ' . mysqli_error($conn);
         }
     }
 }
 ?>
-<?php include 'includes/header.php'; ?>
+<?php include __DIR__ . '/includes/header.php'; ?>
 
 <div class="auth-wrapper">
     <div class="auth-box">
@@ -84,4 +101,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<?php include 'includes/footer.php'; ?>
+<?php include __DIR__ . '/includes/footer.php'; ?>

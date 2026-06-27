@@ -1,10 +1,19 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'customer') {
+if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
-require_once 'config/koneksi.php';
+if ($_SESSION['role'] !== 'customer') {
+    if ($_SESSION['role'] === 'admin') {
+        header('Location: admin/dashboard.php');
+    } elseif ($_SESSION['role'] === 'kasir') {
+        header('Location: kasir/dashboard.php');
+    }
+    exit;
+}
+require_once __DIR__ . '/config/koneksi.php';
+/** @var mysqli $conn */
 
 $pageTitle = 'Booking Lapangan';
 $baseUrl = '';
@@ -37,27 +46,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
              WHERE court_id = ? AND tanggal_booking = ? AND status != 'cancelled'
              AND NOT (jam_selesai <= ? OR jam_mulai >= ?)"
         );
-        mysqli_stmt_bind_param($stmt, 'isss', $court_id, $tanggal, $jam_mulai, $jam_selesai);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_store_result($stmt);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'isss', $court_id, $tanggal, $jam_mulai, $jam_selesai);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_store_result($stmt);
 
-        if (mysqli_stmt_num_rows($stmt) > 0) {
-            $errors[] = 'Lapangan sudah dipesan pada waktu tersebut. Pilih waktu lain.';
+            if (mysqli_stmt_num_rows($stmt) > 0) {
+                $errors[] = 'Lapangan sudah dipesan pada waktu tersebut. Pilih waktu lain.';
+            } else {
+                // Simpan ke session, lanjut ke pilih_paket
+                $_SESSION['booking_draft'] = [
+                    'court_id'   => $court_id,
+                    'tanggal'    => $tanggal,
+                    'jam_mulai'  => $jam_mulai,
+                    'jam_selesai'=> $jam_selesai,
+                ];
+                mysqli_stmt_close($stmt);
+                header('Location: pilih_paket.php');
+                exit;
+            }
+            mysqli_stmt_close($stmt);
         } else {
-            // Simpan ke session, lanjut ke pilih_paket
-            $_SESSION['booking_draft'] = [
-                'court_id'   => $court_id,
-                'tanggal'    => $tanggal,
-                'jam_mulai'  => $jam_mulai,
-                'jam_selesai'=> $jam_selesai,
-            ];
-            header('Location: pilih_paket.php');
-            exit;
+            $errors[] = 'Gagal memeriksa ketersediaan lapangan: ' . mysqli_error($conn);
         }
     }
 }
 ?>
-<?php include 'includes/header.php'; ?>
+<?php include __DIR__ . '/includes/header.php'; ?>
 
 <section class="page-header">
     <div class="container">
@@ -128,4 +143,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </section>
 
-<?php include 'includes/footer.php'; ?>
+<?php include __DIR__ . '/includes/footer.php'; ?>

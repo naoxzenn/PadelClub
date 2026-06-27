@@ -36,7 +36,7 @@ $queries = [
         email VARCHAR(150) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         nomor_telepon VARCHAR(20),
-        role ENUM('admin','customer') DEFAULT 'customer',
+        role ENUM('admin','kasir','customer') DEFAULT 'customer',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB",
 
@@ -105,6 +105,26 @@ if (mysqli_num_rows($adminCheck) === 0) {
     }
 } else {
     $success[] = "Akun admin sudah ada.";
+}
+
+// Cek apakah kasir sudah ada
+$kasirCheck = mysqli_query($conn, "SELECT id FROM users WHERE email='kasir@MyPadel.com'");
+if (mysqli_num_rows($kasirCheck) === 0) {
+    $kasirPass = password_hash('kasir123', PASSWORD_DEFAULT);
+    $stmt = mysqli_prepare($conn,
+        "INSERT INTO users (nama_lengkap, email, password, nomor_telepon, role) VALUES (?, ?, ?, ?, 'kasir')"
+    );
+    $kasirName = 'Kasir Utama';
+    $kasirEmail = 'kasir@MyPadel.com';
+    $kasirPhone = '089876543210';
+    mysqli_stmt_bind_param($stmt, 'ssss', $kasirName, $kasirEmail, $kasirPass, $kasirPhone);
+    if (mysqli_stmt_execute($stmt)) {
+        $success[] = "Akun kasir berhasil dibuat. (Email: kasir@MyPadel.com / Password: kasir123)";
+    } else {
+        $errors[] = "Gagal membuat akun kasir: " . mysqli_error($conn);
+    }
+} else {
+    $success[] = "Akun kasir sudah ada.";
 }
 
 // Cek apakah data lapangan sudah ada

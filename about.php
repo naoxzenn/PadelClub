@@ -1,5 +1,13 @@
 <?php
 session_start();
+if (isset($_SESSION['user_id']) && $_SESSION['role'] !== 'customer') {
+    if ($_SESSION['role'] === 'admin') {
+        header('Location: admin/dashboard.php');
+    } elseif ($_SESSION['role'] === 'kasir') {
+        header('Location: kasir/dashboard.php');
+    }
+    exit;
+}
 $pageTitle = 'Tentang Kami';
 $baseUrl = '';
 ?>

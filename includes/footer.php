@@ -1,4 +1,28 @@
-<?php // includes/footer.php ?>
+<?php
+$role = $_SESSION['role'] ?? '';
+?>
+<?php if ($role === 'admin' || $role === 'kasir'): ?>
+            </div> <!-- Close dashboard-content -->
+        </main> <!-- Close dashboard-main -->
+    </div> <!-- Close dashboard-container -->
+    
+    <script>
+    // Sidebar toggle for mobile/responsive dashboard
+    document.getElementById('sidebar-toggle')?.addEventListener('click', function() {
+        document.querySelector('.dashboard-sidebar')?.classList.toggle('show');
+    });
+    // Close sidebar on outside click on mobile
+    document.addEventListener('click', function(e) {
+        const sidebar = document.querySelector('.dashboard-sidebar');
+        const toggle = document.getElementById('sidebar-toggle');
+        if (sidebar && sidebar.classList.contains('show') && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
+            sidebar.classList.remove('show');
+        }
+    });
+    </script>
+</body>
+</html>
+<?php else: ?>
 <footer class="site-footer">
     <div class="container">
         <div class="footer-grid">
@@ -58,3 +82,4 @@
 
 </body>
 </html>
+<?php endif; ?>

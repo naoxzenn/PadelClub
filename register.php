@@ -1,10 +1,19 @@
 <?php
 session_start();
 if (isset($_SESSION['user_id'])) {
-    header('Location: index.php');
-    exit;
+    if ($_SESSION['role'] === 'admin') {
+        header('Location: admin/dashboard.php');
+        exit;
+    } elseif ($_SESSION['role'] === 'kasir') {
+        header('Location: kasir/dashboard.php');
+        exit;
+    } else {
+        header('Location: index.php');
+        exit;
+    }
 }
-require_once 'config/koneksi.php';
+require_once __DIR__ . '/config/koneksi.php';
+/** @var mysqli $conn */
 
 $pageTitle = 'Daftar Akun';
 $baseUrl = '';
@@ -29,30 +38,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         // Cek email sudah terdaftar
         $stmt = mysqli_prepare($conn, "SELECT id FROM users WHERE email = ?");
-        mysqli_stmt_bind_param($stmt, 's', $email);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_store_result($stmt);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 's', $email);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_store_result($stmt);
 
-        if (mysqli_stmt_num_rows($stmt) > 0) {
-            $errors[] = 'Email sudah terdaftar, gunakan email lain.';
-        } else {
-            // DEVELOPMENT MODE ONLY
-            // Password hashing sementara dinonaktifkan untuk mempercepat proses testing.
-            // Aktifkan kembali password_hash() sebelum deployment ke production:
-            //   $hash = password_hash($pass, PASSWORD_DEFAULT);
-            $hash = $pass;
-            $stmt2 = mysqli_prepare($conn, "INSERT INTO users (nama_lengkap, email, password, nomor_telepon, role) VALUES (?, ?, ?, ?, 'customer')");
-            mysqli_stmt_bind_param($stmt2, 'ssss', $nama, $email, $hash, $telp);
-            if (mysqli_stmt_execute($stmt2)) {
-                $success = 'Registrasi berhasil! Silakan <a href="login.php">login</a>.';
+            if (mysqli_stmt_num_rows($stmt) > 0) {
+                $errors[] = 'Email sudah terdaftar, gunakan email lain.';
             } else {
-                $errors[] = 'Terjadi kesalahan. Coba lagi.';
+                // DEVELOPMENT MODE ONLY
+                // Password hashing sementara dinonaktifkan untuk mempercepat proses testing.
+                // Aktifkan kembali password_hash() sebelum deployment ke production:
+                //   $hash = password_hash($pass, PASSWORD_DEFAULT);
+                $hash = $pass;
+                $stmt2 = mysqli_prepare($conn, "INSERT INTO users (nama_lengkap, email, password, nomor_telepon, role) VALUES (?, ?, ?, ?, 'customer')");
+                if ($stmt2) {
+                    mysqli_stmt_bind_param($stmt2, 'ssss', $nama, $email, $hash, $telp);
+                    if (mysqli_stmt_execute($stmt2)) {
+                        $success = 'Registrasi berhasil! Silakan <a href="login.php">login</a>.';
+                    } else {
+                        $errors[] = 'Terjadi kesalahan. Coba lagi.';
+                    }
+                    mysqli_stmt_close($stmt2);
+                } else {
+                    $errors[] = 'Gagal memproses registrasi: ' . mysqli_error($conn);
+                }
             }
+            mysqli_stmt_close($stmt);
+        } else {
+            $errors[] = 'Gagal memproses validasi email: ' . mysqli_error($conn);
         }
     }
 }
 ?>
-<?php include 'includes/header.php'; ?>
+<?php include __DIR__ . '/includes/header.php'; ?>
 
 <div class="auth-wrapper">
     <div class="auth-box">
@@ -111,4 +130,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<?php include 'includes/footer.php'; ?>
+<?php include __DIR__ . '/includes/footer.php'; ?>

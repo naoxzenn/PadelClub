@@ -1,5 +1,13 @@
 <?php
 session_start();
+if (isset($_SESSION['user_id']) && $_SESSION['role'] !== 'customer') {
+    if ($_SESSION['role'] === 'admin') {
+        header('Location: admin/dashboard.php');
+    } elseif ($_SESSION['role'] === 'kasir') {
+        header('Location: kasir/dashboard.php');
+    }
+    exit;
+}
 $pageTitle = 'Kontak';
 $baseUrl = '';
 ?>
@@ -35,7 +43,7 @@ $baseUrl = '';
                     </div>
                     <div>
                         <strong>Alamat</strong>
-                        <span>Jl. Padel Raya No. 88, Kelapa Gading<br>Jakarta Utara 14240, Indonesia</span>
+                        <span>Jl. Tulang Bawang Sel. No.26, Kadipiro, <br>Kec. Banjarsari,Kota Surakarta, Jawa Tengah 57136</span>
                     </div>
                 </div>
 

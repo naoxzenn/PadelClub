@@ -1,10 +1,19 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'customer') {
+if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
-require_once 'config/koneksi.php';
+if ($_SESSION['role'] !== 'customer') {
+    if ($_SESSION['role'] === 'admin') {
+        header('Location: admin/dashboard.php');
+    } elseif ($_SESSION['role'] === 'kasir') {
+        header('Location: kasir/dashboard.php');
+    }
+    exit;
+}
+require_once __DIR__ . '/config/koneksi.php';
+/** @var mysqli $conn */
 
 $pageTitle = 'Rincian Pembayaran';
 $baseUrl = '';
@@ -25,9 +34,13 @@ $stmt = mysqli_prepare($conn,
      JOIN users u ON b.user_id = u.id
      WHERE b.id = ? AND b.user_id = ?"
 );
+if (!$stmt) {
+    die("Query error: " . mysqli_error($conn));
+}
 mysqli_stmt_bind_param($stmt, 'ii', $booking_id, $_SESSION['user_id']);
 mysqli_stmt_execute($stmt);
 $booking = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+mysqli_stmt_close($stmt);
 
 if (!$booking) {
     header('Location: dashboarduser.php');
@@ -36,6 +49,9 @@ if (!$booking) {
 
 // Cek apakah sudah ada pembayaran
 $stmtP = mysqli_prepare($conn, "SELECT * FROM payments WHERE booking_id = ?");
+if (!$stmtP) {
+    die("Query error: " . mysqli_error($conn));
+}
 mysqli_stmt_bind_param($stmtP, 'i', $booking_id);
 mysqli_stmt_execute($stmtP);
 $payment = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtP));
@@ -138,23 +154,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment) {
         $stmt2 = mysqli_prepare($conn,
             "INSERT INTO payments (booking_id, jumlah_bayar, metode_bayar, bukti_transfer) VALUES (?, ?, ?, ?)"
         );
-        mysqli_stmt_bind_param($stmt2, 'idss', $booking_id, $jumlah, $metode, $bukti);
-        if (mysqli_stmt_execute($stmt2)) {
-            if ($metode === 'Cash') {
-                mysqli_query($conn, "UPDATE bookings SET status='confirmed' WHERE id=$booking_id");
+        if ($stmt2) {
+            mysqli_stmt_bind_param($stmt2, 'idss', $booking_id, $jumlah, $metode, $bukti);
+            if (mysqli_stmt_execute($stmt2)) {
+                if ($metode === 'Cash') {
+                    mysqli_query($conn, "UPDATE bookings SET status='confirmed' WHERE id=$booking_id");
+                }
+                $success = 'Pembayaran berhasil dicatat!';
+                mysqli_stmt_execute($stmtP);
+                $payment = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtP));
+            } else {
+                $errors[] = 'Gagal menyimpan pembayaran.';
             }
-            $success = 'Pembayaran berhasil dicatat!';
-            mysqli_stmt_execute($stmtP);
-            $payment = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtP));
+            mysqli_stmt_close($stmt2);
         } else {
-            $errors[] = 'Gagal menyimpan pembayaran.';
+            $errors[] = 'Gagal memproses pembayaran: ' . mysqli_error($conn);
         }
     }
+    mysqli_stmt_close($stmtP);
 }
 
 $durasi = (strtotime($booking['jam_selesai']) - strtotime($booking['jam_mulai'])) / 3600;
 ?>
-<?php include 'includes/header.php'; ?>
+<?php include __DIR__ . '/includes/header.php'; ?>
 
 <section class="page-header">
     <div class="container">
@@ -434,4 +456,4 @@ document.getElementById('btn-done-payment') && document.getElementById('btn-done
 });
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php include __DIR__ . '/includes/footer.php'; ?>

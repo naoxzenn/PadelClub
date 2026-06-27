@@ -1,6 +1,15 @@
 <?php
 session_start();
-require_once 'config/koneksi.php';
+if (isset($_SESSION['user_id']) && $_SESSION['role'] !== 'customer') {
+    if ($_SESSION['role'] === 'admin') {
+        header('Location: admin/dashboard.php');
+    } elseif ($_SESSION['role'] === 'kasir') {
+        header('Location: kasir/dashboard.php');
+    }
+    exit;
+}
+require_once __DIR__ . '/config/koneksi.php';
+/** @var mysqli $conn */
 
 $pageTitle = 'Beranda';
 $baseUrl = '';
@@ -13,9 +22,14 @@ $filterJam = $_GET['jam'] ?? '';
 
 if (in_array($filterTipe, ['Indoor', 'Outdoor'], true)) {
     $stmtC = mysqli_prepare($conn, "SELECT * FROM courts WHERE status='aktif' AND tipe_lapangan = ? ORDER BY nama_lapangan");
-    mysqli_stmt_bind_param($stmtC, 's', $filterTipe);
-    mysqli_stmt_execute($stmtC);
-    $courts = mysqli_fetch_all(mysqli_stmt_get_result($stmtC), MYSQLI_ASSOC);
+    if ($stmtC) {
+        mysqli_stmt_bind_param($stmtC, 's', $filterTipe);
+        mysqli_stmt_execute($stmtC);
+        $courts = mysqli_fetch_all(mysqli_stmt_get_result($stmtC), MYSQLI_ASSOC);
+        mysqli_stmt_close($stmtC);
+    } else {
+        die("Query error: " . mysqli_error($conn));
+    }
 } else {
     $result = mysqli_query($conn, "SELECT * FROM courts WHERE status='aktif' ORDER BY tipe_lapangan, nama_lapangan");
     $courts = mysqli_fetch_all($result, MYSQLI_ASSOC);
@@ -37,7 +51,7 @@ $imgOutdoor = [
 $imgIdxIndoor = 0;
 $imgIdxOutdoor = 0;
 ?>
-<?php include_once 'includes/header.php'; ?>
+<?php include_once __DIR__ . '/includes/header.php'; ?>
 
 <!-- HERO -->
 <header class="hero">
@@ -260,4 +274,4 @@ $imgIdxOutdoor = 0;
     </div>
 </section>
 
-<?php include 'includes/footer.php'; ?>
+<?php include __DIR__ . '/includes/footer.php'; ?>

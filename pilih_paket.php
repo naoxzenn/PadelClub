@@ -1,14 +1,23 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'customer') {
+if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
+    exit;
+}
+if ($_SESSION['role'] !== 'customer') {
+    if ($_SESSION['role'] === 'admin') {
+        header('Location: admin/dashboard.php');
+    } elseif ($_SESSION['role'] === 'kasir') {
+        header('Location: kasir/dashboard.php');
+    }
     exit;
 }
 if (!isset($_SESSION['booking_draft'])) {
     header('Location: booking.php');
     exit;
 }
-require_once 'config/koneksi.php';
+require_once __DIR__ . '/config/koneksi.php';
+/** @var mysqli $conn */
 
 $pageTitle = 'Pilih Paket';
 $baseUrl = '';
@@ -17,9 +26,14 @@ $errors = [];
 
 // Ambil detail lapangan
 $stmt = mysqli_prepare($conn, "SELECT * FROM courts WHERE id = ?");
-mysqli_stmt_bind_param($stmt, 'i', $draft['court_id']);
-mysqli_stmt_execute($stmt);
-$court = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, 'i', $draft['court_id']);
+    mysqli_stmt_execute($stmt);
+    $court = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+    mysqli_stmt_close($stmt);
+} else {
+    die("Query error: " . mysqli_error($conn));
+}
 
 if (!$court) {
     header('Location: booking.php');
@@ -56,33 +70,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirmed']) && $_POS
         "INSERT INTO bookings (user_id, court_id, tanggal_booking, jam_mulai, jam_selesai, total_harga, paket, sewa_raket, catatan, status)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')"
     );
-    mysqli_stmt_bind_param($stmt2, 'iisssdiss',
-        $user_id, $draft['court_id'],
-        $draft['tanggal'], $draft['jam_mulai'], $draft['jam_selesai'],
-        $total, $paket, $sewa_raket, $catatan
-    );
+    if ($stmt2) {
+        mysqli_stmt_bind_param($stmt2, 'iisssdiss',
+            $user_id, $draft['court_id'],
+            $draft['tanggal'], $draft['jam_mulai'], $draft['jam_selesai'],
+            $total, $paket, $sewa_raket, $catatan
+        );
 
-    if (mysqli_stmt_execute($stmt2)) {
-        $booking_id_created = mysqli_insert_id($conn);
-        $_SESSION['booking_draft'] = null;
-        unset($_SESSION['booking_draft']);
-        // Return JSON for AJAX
-        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => true, 'booking_id' => $booking_id_created]);
+        if (mysqli_stmt_execute($stmt2)) {
+            $booking_id_created = mysqli_insert_id($conn);
+            $_SESSION['booking_draft'] = null;
+            unset($_SESSION['booking_draft']);
+            // Return JSON for AJAX
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'booking_id' => $booking_id_created]);
+                exit;
+            }
+            // Fallback: redirect
+            header("Location: rincian_pembayaran.php?booking_id=$booking_id_created");
             exit;
+        } else {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Gagal menyimpan booking. Coba lagi.']);
+                exit;
+            }
+            $errors[] = 'Gagal menyimpan booking. Coba lagi.';
         }
-        // Fallback: redirect
-        header("Location: rincian_pembayaran.php?booking_id=$booking_id_created");
-        exit;
+        mysqli_stmt_close($stmt2);
     } else {
-        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-            header('Content-Type: application/json');
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Gagal menyimpan booking. Coba lagi.']);
-            exit;
-        }
-        $errors[] = 'Gagal menyimpan booking. Coba lagi.';
+        $errors[] = 'Gagal memproses booking: ' . mysqli_error($conn);
     }
 }
 
@@ -96,7 +115,7 @@ if ($paket_preview === 'per_jam') {
 }
 if ($raket_preview) $total_preview += HARGA_SEWA_RAKET;
 ?>
-<?php include 'includes/header.php'; ?>
+<?php include __DIR__ . '/includes/header.php'; ?>
 
 <section class="page-header">
     <div class="container">
@@ -355,4 +374,4 @@ document.getElementById('btn-go-payment').addEventListener('click', function() {
 });
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php include __DIR__ . '/includes/footer.php'; ?>

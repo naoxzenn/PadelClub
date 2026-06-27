@@ -1,10 +1,19 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'customer') {
+if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
-require_once 'config/koneksi.php';
+if ($_SESSION['role'] !== 'customer') {
+    if ($_SESSION['role'] === 'admin') {
+        header('Location: admin/dashboard.php');
+    } elseif ($_SESSION['role'] === 'kasir') {
+        header('Location: kasir/dashboard.php');
+    }
+    exit;
+}
+require_once __DIR__ . '/config/koneksi.php';
+/** @var mysqli $conn */
 
 $pageTitle = 'Dashboard Saya';
 $baseUrl = '';
@@ -16,17 +25,25 @@ if (isset($_GET['cancel_id'])) {
     $stmtC = mysqli_prepare($conn,
         "UPDATE bookings SET status='cancelled' WHERE id=? AND user_id=? AND status='pending'"
     );
-    mysqli_stmt_bind_param($stmtC, 'ii', $cid, $user_id);
-    mysqli_stmt_execute($stmtC);
+    if ($stmtC) {
+        mysqli_stmt_bind_param($stmtC, 'ii', $cid, $user_id);
+        mysqli_stmt_execute($stmtC);
+        mysqli_stmt_close($stmtC);
+    }
     header('Location: dashboarduser.php?msg=cancelled');
     exit;
 }
 
 // Ambil data user
 $stmtU = mysqli_prepare($conn, "SELECT * FROM users WHERE id = ?");
-mysqli_stmt_bind_param($stmtU, 'i', $user_id);
-mysqli_stmt_execute($stmtU);
-$user = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtU));
+if ($stmtU) {
+    mysqli_stmt_bind_param($stmtU, 'i', $user_id);
+    mysqli_stmt_execute($stmtU);
+    $user = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtU));
+    mysqli_stmt_close($stmtU);
+} else {
+    die("Query error: " . mysqli_error($conn));
+}
 
 // Ambil riwayat booking
 $stmtB = mysqli_prepare($conn,
@@ -37,9 +54,14 @@ $stmtB = mysqli_prepare($conn,
      WHERE b.user_id = ?
      ORDER BY b.created_at DESC"
 );
-mysqli_stmt_bind_param($stmtB, 'i', $user_id);
-mysqli_stmt_execute($stmtB);
-$bookings = mysqli_fetch_all(mysqli_stmt_get_result($stmtB), MYSQLI_ASSOC);
+if ($stmtB) {
+    mysqli_stmt_bind_param($stmtB, 'i', $user_id);
+    mysqli_stmt_execute($stmtB);
+    $bookings = mysqli_fetch_all(mysqli_stmt_get_result($stmtB), MYSQLI_ASSOC);
+    mysqli_stmt_close($stmtB);
+} else {
+    die("Query error: " . mysqli_error($conn));
+}
 
 // Statistik
 $total_booking  = count($bookings);
@@ -49,7 +71,7 @@ $total_pengeluaran = array_sum(array_column(
     'total_harga'
 ));
 ?>
-<?php include 'includes/header.php'; ?>
+<?php include __DIR__ . '/includes/header.php'; ?>
 
 <section class="page-header">
     <div class="container">
@@ -175,4 +197,4 @@ $total_pengeluaran = array_sum(array_column(
     </div>
 </section>
 
-<?php include 'includes/footer.php'; ?>
+<?php include __DIR__ . '/includes/footer.php'; ?>
