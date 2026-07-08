@@ -18,26 +18,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     if ($action === 'confirm_booking') {
         $bid = (int)$_POST['booking_id'];
-        // Cek status booking
-        $check_res = mysqli_query($conn, "SELECT status FROM bookings WHERE id=$bid");
-        $chk = mysqli_fetch_assoc($check_res);
-        if ($chk && $chk['status'] === 'cancelled') {
-            $msg = 'Gagal memproses: Booking #' . $bid . ' telah dibatalkan.';
-            $msg_type = 'error';
-        } else {
-            $s = mysqli_prepare($conn, "UPDATE bookings SET status='confirmed' WHERE id=?");
-            if ($s) {
-                mysqli_stmt_bind_param($s, 'i', $bid);
-                if (mysqli_stmt_execute($s)) {
-                    $msg = 'Booking #' . $bid . ' berhasil dikonfirmasi.';
-                } else {
-                    $msg = 'Gagal mengonfirmasi booking.';
-                    $msg_type = 'error';
-                }
-                mysqli_stmt_close($s);
+        $s = mysqli_prepare($conn, "UPDATE bookings SET status='confirmed' WHERE id=?");
+        if ($s) {
+            mysqli_stmt_bind_param($s, 'i', $bid);
+            if (mysqli_stmt_execute($s)) {
+                $msg = 'Booking #' . $bid . ' berhasil dikonfirmasi.';
             } else {
-                die("Query error: " . mysqli_error($conn));
+                $msg = 'Gagal mengonfirmasi booking.';
+                $msg_type = 'error';
             }
+            mysqli_stmt_close($s);
+        } else {
+            die("Query error: " . mysqli_error($conn));
         }
     } elseif ($action === 'cancel_booking') {
         $bid = (int)$_POST['booking_id'];
@@ -60,66 +52,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $bid = (int)$_POST['booking_id'];
         
         // Ambil data booking untuk hitung total harga
-        $res = mysqli_query($conn, "SELECT total_harga, status FROM bookings WHERE id=$bid");
+        $res = mysqli_query($conn, "SELECT total_harga FROM bookings WHERE id=$bid");
         $booking = mysqli_fetch_assoc($res);
         
         if ($booking) {
-            if ($booking['status'] === 'cancelled') {
-                $msg = 'Gagal memproses pembayaran: Booking #' . $bid . ' telah dibatalkan.';
-                $msg_type = 'error';
-            } else {
-                $jumlah = (float)$booking['total_harga'];
-                $cashier_id = $_SESSION['user_id'];
-                $payment_date = date('Y-m-d H:i:s');
-                $receipt_number = 'REC-' . date('Ymd') . '-' . sprintf('%04d', $bid);
+            $jumlah = (float)$booking['total_harga'];
+            $cashier_id = $_SESSION['user_id'];
+            $payment_date = date('Y-m-d H:i:s');
+            $receipt_number = 'REC-' . date('Ymd') . '-' . sprintf('%04d', $bid);
 
-                // Cek apakah data pembayaran sudah ada
-                $check = mysqli_query($conn, "SELECT id FROM payments WHERE booking_id=$bid");
-                $payment_row = mysqli_fetch_assoc($check);
-                
+            // Cek apakah data pembayaran sudah ada
+            $check = mysqli_query($conn, "SELECT id FROM payments WHERE booking_id=$bid");
+            $payment_row = mysqli_fetch_assoc($check);
+            
+            if ($payment_row) {
+                // Update
+                $stmt = mysqli_prepare($conn,
+                    "UPDATE payments SET 
+                        jumlah_bayar = ?, 
+                        metode_bayar = 'Cash', 
+                        status_verifikasi = 'terverifikasi', 
+                        payment_status = 'paid', 
+                        payment_date = ?, 
+                        cashier_id = ?, 
+                        receipt_number = ? 
+                     WHERE booking_id = ?"
+                );
+            } else {
+                // Insert
+                $stmt = mysqli_prepare($conn,
+                    "INSERT INTO payments (booking_id, jumlah_bayar, metode_bayar, status_verifikasi, payment_status, payment_date, cashier_id, receipt_number) 
+                     VALUES (?, ?, 'Cash', 'terverifikasi', 'paid', ?, ?, ?)"
+                );
+            }
+            
+            if ($stmt) {
                 if ($payment_row) {
-                    // Update
-                    $stmt = mysqli_prepare($conn,
-                        "UPDATE payments SET 
-                            jumlah_bayar = ?, 
-                            metode_bayar = 'Cash', 
-                            status_verifikasi = 'terverifikasi', 
-                            payment_status = 'paid', 
-                            payment_date = ?, 
-                            cashier_id = ?, 
-                            receipt_number = ? 
-                         WHERE booking_id = ?"
-                    );
+                    mysqli_stmt_bind_param($stmt, 'dsisi', $jumlah, $payment_date, $cashier_id, $receipt_number, $bid);
                 } else {
-                    // Insert
-                    $stmt = mysqli_prepare($conn,
-                        "INSERT INTO payments (booking_id, jumlah_bayar, metode_bayar, status_verifikasi, payment_status, payment_date, cashier_id, receipt_number) 
-                         VALUES (?, ?, 'Cash', 'terverifikasi', 'paid', ?, ?, ?)"
-                    );
+                    mysqli_stmt_bind_param($stmt, 'idsis', $bid, $jumlah, $payment_date, $cashier_id, $receipt_number);
                 }
                 
-                if ($stmt) {
-                    if ($payment_row) {
-                        mysqli_stmt_bind_param($stmt, 'dsisi', $jumlah, $payment_date, $cashier_id, $receipt_number, $bid);
-                    } else {
-                        mysqli_stmt_bind_param($stmt, 'idsis', $bid, $jumlah, $payment_date, $cashier_id, $receipt_number);
-                    }
+                if (mysqli_stmt_execute($stmt)) {
+                    // Update booking status to confirmed
+                    mysqli_query($conn, "UPDATE bookings SET status='confirmed' WHERE id=$bid");
+                    $msg = 'Pembayaran Cash Berhasil! Struk pembayaran telah dibuat dengan nomor ' . $receipt_number . '.';
                     
-                    if (mysqli_stmt_execute($stmt)) {
-                        // Update booking status to confirmed
-                        mysqli_query($conn, "UPDATE bookings SET status='confirmed' WHERE id=$bid");
-                        $msg = 'Pembayaran Cash Berhasil! Struk pembayaran telah dibuat dengan nomor ' . $receipt_number . '.';
-                        
-                        // Tambahkan tanda bahwa struk siap dicetak
-                        mysqli_query($conn, "UPDATE payments SET receipt_printed=0 WHERE booking_id=$bid");
-                    } else {
-                        $msg = 'Gagal memproses pembayaran cash.';
-                        $msg_type = 'error';
-                    }
-                    mysqli_stmt_close($stmt);
+                    // Tambahkan tanda bahwa struk siap dicetak
+                    mysqli_query($conn, "UPDATE payments SET receipt_printed=0 WHERE booking_id=$bid");
                 } else {
-                    die("Query error: " . mysqli_error($conn));
+                    $msg = 'Gagal memproses pembayaran cash.';
+                    $msg_type = 'error';
                 }
+                mysqli_stmt_close($stmt);
+            } else {
+                die("Query error: " . mysqli_error($conn));
             }
         } else {
             $msg = 'Booking tidak ditemukan.';

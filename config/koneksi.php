@@ -16,7 +16,8 @@ if (!$conn) {
 // Set charset
 mysqli_set_charset($conn, "utf8mb4");
 
-// Migrasi otomatis skema database.
+// ---- AUTO MIGRATION (DEVELOPMENT/PRODUCTION SCHEMA SYNC) ----
+// 1. Alter users table to support 'kasir' role
 $check_role = mysqli_query($conn, "DESCRIBE users");
 if ($check_role) {
     while ($row = mysqli_fetch_assoc($check_role)) {
@@ -25,19 +26,6 @@ if ($check_role) {
         }
     }
 }
-
-// Migrasi otomatis kolom cancelled_at di tabel bookings
-$check_bookings = mysqli_query($conn, "DESCRIBE bookings");
-if ($check_bookings) {
-    $booking_cols = [];
-    while ($row = mysqli_fetch_assoc($check_bookings)) {
-        $booking_cols[] = $row['Field'];
-    }
-    if (!in_array('cancelled_at', $booking_cols)) {
-        mysqli_query($conn, "ALTER TABLE bookings ADD COLUMN cancelled_at DATETIME NULL AFTER status");
-    }
-}
-
 
 // 2. Alter payments table to add necessary columns
 $check_pay = mysqli_query($conn, "DESCRIBE payments");
