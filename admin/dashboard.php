@@ -11,8 +11,7 @@ $pageTitle = 'Dashboard Admin';
 $baseUrl = '../';
 $msg = '';
 
-// ---- AKSI ----
-// Update status booking
+// Proses aksi user.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'update_status') {
         $bid    = (int)$_POST['booking_id'];
@@ -112,6 +111,9 @@ $users = mysqli_fetch_all(mysqli_query($conn,
 ?>
 <?php include __DIR__ . '/../includes/header.php'; ?>
 
+<!-- Bootstrap Icons CDN -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
 <section class="section" style="padding-top: 10px;">
     <div class="container" style="max-width: 100%; padding: 0;">
 
@@ -206,7 +208,20 @@ $users = mysqli_fetch_all(mysqli_query($conn,
                                     <td><?= date('d/m/Y', strtotime($b['tanggal_booking'])) ?></td>
                                     <td><?= substr($b['jam_mulai'],0,5) ?> – <?= substr($b['jam_selesai'],0,5) ?></td>
                                     <td>Rp <?= number_format($b['total_harga'], 0, ',', '.') ?></td>
-                                    <td><span class="status-<?= $b['status'] ?>"><?= ucfirst($b['status']) ?></span></td>
+                                    <td>
+                                        <?php if ($b['status'] === 'cancelled'): ?>
+                                            <span class="status-cancelled">
+                                                <i class="bi bi-x-circle-fill"></i> Dibatalkan
+                                                <?php if (!empty($b['cancelled_at'])): ?>
+                                                    <br><small class="text-danger" style="font-size: 0.75rem;">Oleh Pelanggan<br>(<?= date('d/m H:i', strtotime($b['cancelled_at'])) ?>)</small>
+                                                <?php endif; ?>
+                                            </span>
+                                        <?php elseif ($b['status'] === 'confirmed'): ?>
+                                            <span class="status-confirmed"><i class="bi bi-check-circle-fill"></i> Confirmed</span>
+                                        <?php else: ?>
+                                            <span class="status-pending"><i class="bi bi-hourglass-split"></i> Pending</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td>
                                         <form method="POST" style="display:flex; gap:4px; align-items:center;">
                                             <input type="hidden" name="action" value="update_status">
@@ -214,7 +229,7 @@ $users = mysqli_fetch_all(mysqli_query($conn,
                                             <select name="status" style="padding:4px 6px; font-size:13px; border:1px solid #ccc; border-radius:3px;">
                                                 <option value="pending" <?= $b['status']==='pending' ? 'selected' : '' ?>>Pending</option>
                                                 <option value="confirmed" <?= $b['status']==='confirmed' ? 'selected' : '' ?>>Confirmed</option>
-                                                <option value="cancelled" <?= $b['status']==='cancelled' ? 'selected' : '' ?>>Cancelled</option>
+                                                <option value="cancelled" <?= $b['status']==='cancelled' ? 'selected' : '' ?>>Dibatalkan</option>
                                             </select>
                                             <button type="submit" class="btn btn-sm btn-primary">Ubah</button>
                                         </form>

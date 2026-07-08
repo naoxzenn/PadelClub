@@ -15,6 +15,59 @@ if ($_SESSION['role'] !== 'customer') {
 require_once __DIR__ . '/config/koneksi.php';
 /** @var mysqli $conn */
 
+// Helper untuk memetakan status booking & rincian status
+function getBookingStatusDetailsForDetail($b, $p) {
+    if ($b['status'] === 'cancelled') {
+        return [
+            'label' => 'Dibatalkan',
+            'class' => 'status-cancelled',
+            'icon'  => 'bi-x-circle-fill'
+        ];
+    }
+    
+    if ($b['status'] === 'confirmed') {
+        $now = time();
+        $bookingStart = strtotime($b['tanggal_booking'] . ' ' . $b['jam_mulai']);
+        $bookingEnd = strtotime($b['tanggal_booking'] . ' ' . $b['jam_selesai']);
+        
+        if ($now > $bookingEnd) {
+            return [
+                'label' => 'Selesai',
+                'class' => 'status-confirmed',
+                'icon'  => 'bi-check-circle-fill'
+            ];
+        } elseif ($now >= $bookingStart && $now <= $bookingEnd) {
+            return [
+                'label' => 'Sedang Bermain',
+                'class' => 'status-confirmed',
+                'icon'  => 'bi-play-circle-fill'
+            ];
+        } else {
+            return [
+                'label' => 'Dikonfirmasi',
+                'class' => 'status-confirmed',
+                'icon'  => 'bi-patch-check-fill'
+            ];
+        }
+    }
+    
+    // Status is 'pending'
+    if ($p) {
+        return [
+            'label' => 'Menunggu Konfirmasi',
+            'class' => 'status-pending',
+            'icon'  => 'bi-hourglass-split'
+        ];
+    } else {
+        return [
+            'label' => 'Menunggu Pembayaran',
+            'class' => 'status-pending',
+            'icon'  => 'bi-wallet2'
+        ];
+    }
+}
+
+
 $pageTitle = 'Rincian Pembayaran';
 $baseUrl = '';
 $errors = [];
@@ -178,6 +231,9 @@ $durasi = (strtotime($booking['jam_selesai']) - strtotime($booking['jam_mulai'])
 ?>
 <?php include __DIR__ . '/includes/header.php'; ?>
 
+<!-- Bootstrap Icons CDN -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
 <section class="page-header">
     <div class="container">
         <h1>Rincian Pembayaran</h1>
@@ -234,7 +290,12 @@ $durasi = (strtotime($booking['jam_selesai']) - strtotime($booking['jam_mulai'])
                     <div class="detail-row">
                         <span class="label">Status Booking</span>
                         <span class="value">
-                            <span class="status-<?= $booking['status'] ?>"><?= ucfirst($booking['status']) ?></span>
+                            <?php 
+                            $statusDetails = getBookingStatusDetailsForDetail($booking, $payment);
+                            ?>
+                            <span class="<?= $statusDetails['class'] ?>">
+                                <i class="bi <?= $statusDetails['icon'] ?> me-1"></i> <?= $statusDetails['label'] ?>
+                            </span>
                         </span>
                     </div>
                     <?php if ($booking['catatan']): ?>

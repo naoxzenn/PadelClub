@@ -53,7 +53,7 @@ $imgIdxOutdoor = 0;
 ?>
 <?php include_once __DIR__ . '/includes/header.php'; ?>
 
-<!-- HERO -->
+<!-- Hero section -->
 <header class="hero">
     <div class="hero-bg" style="background-image:url('https://lh3.googleusercontent.com/aida-public/AB6AXuCrPOZIYAwRmKTaO0PSdNGCgidt7tqaR3zcSJhxGcllwwH4aLWnUw20kT7jEUsXTILfNe5l-W_UvbpMyuDHy-VtAzHvWFaA-CoJcflE-nil8LXuPbpcdd7bErE5LkFo6MrZGRL0A7lKCjQVIBw8dqPrqPgeDKAiCwWWYiHLETJkpub6ux8sBVCDjlf5e0ajldRmEnF9skVttMksDpHDN4EMahLBAT2VAHAphfPQl7XrwzWs2WawitPFletSA6xfUKvpQFqqSf6LMhro');"></div>
     <div class="container hero-content">
@@ -129,7 +129,7 @@ $imgIdxOutdoor = 0;
     <?php endif; ?>
 </div>
 
-<!-- LAPANGAN UNGGULAN -->
+<!--Lapangan unggulan section-->
 <section class="section" id="lapangan" style="padding-top: 0;">
     <div class="container">
         <div class="section-head">
@@ -187,7 +187,7 @@ $imgIdxOutdoor = 0;
     </div>
 </section>
 
-<!-- KENAPA PADELCLUB -->
+<!-- Kenapa PadelClub section -->
 <section class="section" style="background:#fff;">
     <div class="container">
         <div class="section-title-center">
@@ -229,7 +229,7 @@ $imgIdxOutdoor = 0;
     </div>
 </section>
 
-<!-- CARA BOOKING -->
+<!--Cara booking section-->
 <section class="section">
     <div class="container">
         <div class="section-title-center">
@@ -261,7 +261,7 @@ $imgIdxOutdoor = 0;
     </div>
 </section>
 
-<!-- CTA -->
+<!-- CTA section -->
 <section class="container" style="padding-bottom: 64px;">
     <div class="cta-banner">
         <h2>Siap Main Padel Hari Ini?</h2>

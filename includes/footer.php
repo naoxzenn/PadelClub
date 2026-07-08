@@ -49,7 +49,7 @@ $role = $_SESSION['role'] ?? '';
             <div>
                 <h4>Bantuan</h4>
                 <ul>
-                    <li><a href="#">Hubungi Kami</a></li>
+                    <li><a href="contact.php">Hubungi Kami</a></li>
                     <li><a href="#">Kebijakan Privasi</a></li>
                     <li><a href="#">Syarat &amp; Ketentuan</a></li>
                     <li><a href="#">FAQ</a></li>
