@@ -18,18 +18,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     if ($action === 'confirm_booking') {
         $bid = (int)$_POST['booking_id'];
-        $s = mysqli_prepare($conn, "UPDATE bookings SET status='confirmed' WHERE id=?");
-        if ($s) {
-            mysqli_stmt_bind_param($s, 'i', $bid);
-            if (mysqli_stmt_execute($s)) {
-                $msg = 'Booking #' . $bid . ' berhasil dikonfirmasi.';
-            } else {
-                $msg = 'Gagal mengonfirmasi booking.';
-                $msg_type = 'error';
-            }
-            mysqli_stmt_close($s);
+        // Guard: cek apakah booking sudah dibatalkan
+        $chk = mysqli_fetch_assoc(mysqli_query($conn, "SELECT status FROM bookings WHERE id=$bid"));
+        if ($chk && $chk['status'] === 'cancelled') {
+            $msg = 'Gagal: Booking #' . $bid . ' telah dibatalkan oleh pelanggan.';
+            $msg_type = 'error';
         } else {
-            die("Query error: " . mysqli_error($conn));
+            $s = mysqli_prepare($conn, "UPDATE bookings SET status='confirmed' WHERE id=?");
+            if ($s) {
+                mysqli_stmt_bind_param($s, 'i', $bid);
+                if (mysqli_stmt_execute($s)) {
+                    $msg = 'Booking #' . $bid . ' berhasil dikonfirmasi.';
+                } else {
+                    $msg = 'Gagal mengonfirmasi booking.';
+                    $msg_type = 'error';
+                }
+                mysqli_stmt_close($s);
+            } else {
+                die("Query error: " . mysqli_error($conn));
+            }
         }
     } elseif ($action === 'cancel_booking') {
         $bid = (int)$_POST['booking_id'];
@@ -51,11 +58,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     } elseif ($action === 'pay_cash') {
         $bid = (int)$_POST['booking_id'];
         
-        // Ambil data booking untuk hitung total harga
-        $res = mysqli_query($conn, "SELECT total_harga FROM bookings WHERE id=$bid");
+        // Ambil data booking untuk hitung total harga + cek status
+        $res = mysqli_query($conn, "SELECT total_harga, status FROM bookings WHERE id=$bid");
         $booking = mysqli_fetch_assoc($res);
         
         if ($booking) {
+            // Guard: cek apakah booking sudah dibatalkan
+            if ($booking['status'] === 'cancelled') {
+                $msg = 'Gagal: Booking #' . $bid . ' telah dibatalkan oleh pelanggan. Pembayaran tidak dapat diproses.';
+                $msg_type = 'error';
+            } else {
             $jumlah = (float)$booking['total_harga'];
             $cashier_id = $_SESSION['user_id'];
             $payment_date = date('Y-m-d H:i:s');
@@ -107,6 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 mysqli_stmt_close($stmt);
             } else {
                 die("Query error: " . mysqli_error($conn));
+            }
             }
         } else {
             $msg = 'Booking tidak ditemukan.';

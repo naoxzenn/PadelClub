@@ -20,10 +20,44 @@ $baseUrl = '';
 $errors = [];
 $success = '';
 
-$booking_id = (int)($_GET['booking_id'] ?? 0);
+$booking_id = (int)($_GET['booking_id'] ?? $_POST['booking_id'] ?? 0);
 if (!$booking_id) {
     header('Location: dashboarduser.php');
     exit;
+}
+
+// [NEW] Handler pembatalan booking — harus diproses sebelum query utama
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'batalkan') {
+    // [NEW] Validasi kepemilikan + status sebelum update
+    $stmtCek = mysqli_prepare($conn,
+        "SELECT id, status FROM bookings WHERE id = ? AND user_id = ?"
+    );
+    mysqli_stmt_bind_param($stmtCek, 'ii', $booking_id, $_SESSION['user_id']);
+    mysqli_stmt_execute($stmtCek);
+    $rowCek = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtCek));
+    mysqli_stmt_close($stmtCek);
+
+    $statusBolehBatal = ['pending', 'menunggu'];
+
+    if (!$rowCek) {
+        $errors[] = 'Booking tidak ditemukan atau bukan milik Anda.';
+    } elseif (!in_array($rowCek['status'], $statusBolehBatal, true)) {
+        $errors[] = 'Booking dengan status "' . htmlspecialchars($rowCek['status']) . '" tidak dapat dibatalkan.';
+    } else {
+        // [NEW] Eksekusi pembatalan dengan prepared statement
+        $stmtBatal = mysqli_prepare($conn,
+            "UPDATE bookings SET status = 'cancelled' WHERE id = ? AND user_id = ?"
+        );
+        mysqli_stmt_bind_param($stmtBatal, 'ii', $booking_id, $_SESSION['user_id']);
+        if (mysqli_stmt_execute($stmtBatal) && mysqli_stmt_affected_rows($stmtBatal) > 0) {
+            mysqli_stmt_close($stmtBatal);
+            header('Location: dashboarduser.php?msg=cancelled');
+            exit;
+        } else {
+            mysqli_stmt_close($stmtBatal);
+            $errors[] = 'Pembatalan gagal. Silakan coba lagi atau hubungi admin.';
+        }
+    }
 }
 
 // Ambil data booking + lapangan
@@ -58,6 +92,7 @@ $payment = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtP));
 
 // Handle AJAX POST from payment confirmation modal
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment
+    && ($_POST['action'] ?? '') !== 'batalkan'
     && !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
     && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest'
 ) {
@@ -120,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment
 }
 
 // Fallback non-AJAX POST (legacy safety)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment && ($_POST['action'] ?? '') !== 'batalkan') {
     $metode = $_POST['metode_bayar'] ?? '';
     $jumlah = (float)($booking['total_harga']);
     $bukti  = '';
@@ -175,6 +210,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment) {
 }
 
 $durasi = (strtotime($booking['jam_selesai']) - strtotime($booking['jam_mulai'])) / 3600;
+
+// [NEW] Tentukan apakah booking masih boleh dibatalkan
+$bisaDibatalkan = in_array($booking['status'], ['pending', 'menunggu'], true);
 ?>
 <?php include __DIR__ . '/includes/header.php'; ?>
 
@@ -335,15 +373,27 @@ $durasi = (strtotime($booking['jam_selesai']) - strtotime($booking['jam_mulai'])
                 </div>
             <?php endif; ?>
 
-            <div style="text-align: center; margin-top: 10px;">
-                <a href="dashboarduser.php" class="btn btn-secondary">Lihat Riwayat Booking</a>
+            <!-- [NEW] Tombol aksi bawah halaman -->
+            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 10px; flex-wrap: wrap;">
+                <a href="dashboarduser.php" class="btn btn-secondary">
+                    <span class="material-symbols-outlined">receipt_long</span>
+                    Lihat Riwayat Booking
+                </a>
+                <?php if ($bisaDibatalkan): ?>
+                    <!-- [NEW] Tombol batalkan — hanya muncul jika status pending/menunggu -->
+                    <button type="button" class="btn btn-danger" onclick="openModal('modal-batalkan')">
+                        <span class="material-symbols-outlined">cancel</span>
+                        Batalkan Pesanan
+                    </button>
+                <?php endif; ?>
             </div>
+
         </div>
     </div>
 </section>
 
 <!-- ═══════════════════════════════════════════════
-     MODAL 3 — PAYMENT CONFIRMATION
+     MODAL — PAYMENT CONFIRMATION
 ════════════════════════════════════════════════ -->
 <div class="modal-backdrop" id="modal-payment-confirm" role="dialog" aria-modal="true" aria-labelledby="modal-pay-title" style="display:none;">
     <div class="modal-box">
@@ -379,7 +429,7 @@ $durasi = (strtotime($booking['jam_selesai']) - strtotime($booking['jam_mulai'])
 </div>
 
 <!-- ═══════════════════════════════════════════════
-     MODAL 4 — PAYMENT SUCCESS
+     MODAL — PAYMENT SUCCESS
 ════════════════════════════════════════════════ -->
 <div class="modal-backdrop" id="modal-payment-success" role="dialog" aria-modal="true" aria-labelledby="modal-pay-success-title" style="display:none;">
     <div class="modal-box" style="max-width:420px;">
@@ -394,6 +444,82 @@ $durasi = (strtotime($booking['jam_selesai']) - strtotime($booking['jam_mulai'])
                 Kembali ke Dashboard
             </button>
         </div>
+    </div>
+</div>
+
+<!-- [NEW] ═══════════════════════════════════════════════
+     MODAL — KONFIRMASI PEMBATALAN BOOKING
+════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-batalkan" role="dialog" aria-modal="true" aria-labelledby="modal-batal-title" style="display:none;">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 id="modal-batal-title">Batalkan Pesanan</h3>
+            <button class="modal-close" onclick="closeModal('modal-batalkan')" aria-label="Tutup">&times;</button>
+        </div>
+        <div class="modal-body">
+
+            <!-- [NEW] Peringatan merah di atas -->
+            <div class="alert alert-danger" style="margin-bottom: 20px;">
+                <strong>Perhatian!</strong> Pembatalan tidak dapat diurungkan. Apakah kamu yakin ingin membatalkan pesanan ini?
+            </div>
+
+            <!-- [NEW] Ringkasan detail booking di dalam modal -->
+            <div class="modal-summary-card">
+                <div class="detail-row">
+                    <span class="label">ID Booking</span>
+                    <span class="value">#<?= $booking['id'] ?></span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Lapangan</span>
+                    <span class="value">
+                        <?= htmlspecialchars($booking['nama_lapangan']) ?>
+                        <span class="badge badge-<?= strtolower($booking['tipe_lapangan']) ?>" style="margin-left:6px;">
+                            <?= $booking['tipe_lapangan'] ?>
+                        </span>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Tanggal</span>
+                    <span class="value"><?= date('d F Y', strtotime($booking['tanggal_booking'])) ?></span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Jam Main</span>
+                    <span class="value"><?= $booking['jam_mulai'] ?> – <?= $booking['jam_selesai'] ?> (<?= $durasi ?> jam)</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Paket</span>
+                    <span class="value"><?= $booking['paket'] === 'per_jam' ? 'Per Jam' : 'Per Match' ?></span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Status Saat Ini</span>
+                    <span class="value">
+                        <span class="status-<?= $booking['status'] ?>"><?= ucfirst($booking['status']) ?></span>
+                    </span>
+                </div>
+                <div class="detail-row total">
+                    <span class="label">Total Harga</span>
+                    <span class="value">Rp <?= number_format($booking['total_harga'], 0, ',', '.') ?></span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- [NEW] Footer modal dengan form POST batalkan -->
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-batalkan')">
+                <span class="material-symbols-outlined">arrow_back</span>
+                Kembali
+            </button>
+            <form method="POST" action="rincian_pembayaran.php?booking_id=<?= $booking_id ?>" style="flex:1;">
+                <input type="hidden" name="action" value="batalkan">
+                <input type="hidden" name="booking_id" value="<?= $booking_id ?>">
+                <button type="submit" class="btn btn-danger btn-block">
+                    <span class="material-symbols-outlined">cancel</span>
+                    Ya, Batalkan
+                </button>
+            </form>
+        </div>
+
     </div>
 </div>
 

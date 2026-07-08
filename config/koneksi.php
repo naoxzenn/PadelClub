@@ -27,6 +27,19 @@ if ($check_role) {
     }
 }
 
+// 1b. Add cancelled_at column to bookings table (for soft cancel feature)
+$check_bookings = mysqli_query($conn, "DESCRIBE bookings");
+if ($check_bookings) {
+    $booking_cols = [];
+    while ($row = mysqli_fetch_assoc($check_bookings)) {
+        $booking_cols[] = $row['Field'];
+    }
+    if (!in_array('cancelled_at', $booking_cols)) {
+        mysqli_query($conn, "ALTER TABLE bookings ADD COLUMN cancelled_at DATETIME NULL AFTER status");
+    }
+}
+
+
 // 2. Alter payments table to add necessary columns
 $check_pay = mysqli_query($conn, "DESCRIBE payments");
 if ($check_pay) {
