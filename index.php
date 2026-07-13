@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/bootstrap.php';
 if (isset($_SESSION['user_id']) && $_SESSION['role'] !== 'customer') {
     if ($_SESSION['role'] === 'admin') {
         header('Location: admin/dashboard.php');
@@ -8,11 +8,12 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] !== 'customer') {
     }
     exit;
 }
-require_once __DIR__ . '/config/koneksi.php';
 /** @var mysqli $conn */
 
 $pageTitle = 'Beranda';
 $baseUrl = '';
+
+
 
 // Filter tipe lapangan (dari search bar) — tanggal & jam masih bersifat tampilan,
 // karena sistem belum punya pengecekan ketersediaan real-time per slot.
@@ -36,8 +37,8 @@ if (in_array($filterTipe, ['Indoor', 'Outdoor'], true)) {
 }
 
 // Statistik ringkas untuk hero
-$totalMember = (int)(mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM users WHERE role='customer'"))[0] ?? 0);
-$totalBookingDone = (int)(mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE status='confirmed'"))[0] ?? 0);
+$totalMember = (int) (mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM users WHERE role='customer'"))[0] ?? 0);
+$totalBookingDone = (int) (mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE status='confirmed'"))[0] ?? 0);
 $totalLapangan = count($courts);
 
 // Gambar lapangan — di-mapping berdasarkan tipe karena tabel courts belum punya kolom foto.
@@ -55,10 +56,13 @@ $imgIdxOutdoor = 0;
 
 <!-- Hero section -->
 <header class="hero">
-    <div class="hero-bg" style="background-image:url('https://lh3.googleusercontent.com/aida-public/AB6AXuCrPOZIYAwRmKTaO0PSdNGCgidt7tqaR3zcSJhxGcllwwH4aLWnUw20kT7jEUsXTILfNe5l-W_UvbpMyuDHy-VtAzHvWFaA-CoJcflE-nil8LXuPbpcdd7bErE5LkFo6MrZGRL0A7lKCjQVIBw8dqPrqPgeDKAiCwWWYiHLETJkpub6ux8sBVCDjlf5e0ajldRmEnF9skVttMksDpHDN4EMahLBAT2VAHAphfPQl7XrwzWs2WawitPFletSA6xfUKvpQFqqSf6LMhro');"></div>
+    <div class="hero-bg"
+        style="background-image:url('https://lh3.googleusercontent.com/aida-public/AB6AXuCrPOZIYAwRmKTaO0PSdNGCgidt7tqaR3zcSJhxGcllwwH4aLWnUw20kT7jEUsXTILfNe5l-W_UvbpMyuDHy-VtAzHvWFaA-CoJcflE-nil8LXuPbpcdd7bErE5LkFo6MrZGRL0A7lKCjQVIBw8dqPrqPgeDKAiCwWWYiHLETJkpub6ux8sBVCDjlf5e0ajldRmEnF9skVttMksDpHDN4EMahLBAT2VAHAphfPQl7XrwzWs2WawitPFletSA6xfUKvpQFqqSf6LMhro');">
+    </div>
     <div class="container hero-content">
         <h1>Main Padel Lebih Seru Bersama Komunitas Terbaik</h1>
-        <p class="lead">Booking lapangan dalam hitungan detik, pantau riwayat transaksimu, dan temukan lapangan indoor maupun outdoor di PadelClub.</p>
+        <p class="lead">Booking lapangan dalam hitungan detik, pantau riwayat transaksimu, dan temukan lapangan indoor
+            maupun outdoor di PadelClub.</p>
         <div class="hero-actions">
             <?php if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'customer'): ?>
                 <a href="booking.php" class="btn btn-primary">Booking Sekarang</a>
@@ -148,18 +152,19 @@ $imgIdxOutdoor = 0;
             <div class="court-grid-img">
                 <?php foreach ($courts as $court): ?>
                     <?php
-                        if ($court['tipe_lapangan'] === 'Indoor') {
-                            $img = $imgIndoor[$imgIdxIndoor % count($imgIndoor)];
-                            $imgIdxIndoor++;
-                        } else {
-                            $img = $imgOutdoor[$imgIdxOutdoor % count($imgOutdoor)];
-                            $imgIdxOutdoor++;
-                        }
+                    if ($court['tipe_lapangan'] === 'Indoor') {
+                        $img = $imgIndoor[$imgIdxIndoor % count($imgIndoor)];
+                        $imgIdxIndoor++;
+                    } else {
+                        $img = $imgOutdoor[$imgIdxOutdoor % count($imgOutdoor)];
+                        $imgIdxOutdoor++;
+                    }
                     ?>
                     <div class="court-card">
                         <div class="court-card-img-wrap">
                             <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($court['nama_lapangan']) ?>">
-                            <span class="badge badge-<?= strtolower($court['tipe_lapangan']) ?>"><?= $court['tipe_lapangan'] ?></span>
+                            <span
+                                class="badge badge-<?= strtolower($court['tipe_lapangan']) ?>"><?= $court['tipe_lapangan'] ?></span>
                         </div>
                         <div class="court-card-body">
                             <h3 style="font-size:1.1rem; font-weight:700; color:var(--navy); margin-bottom:8px;">
@@ -173,7 +178,8 @@ $imgIdxOutdoor = 0;
                                 </span>
                             </div>
                             <?php if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'customer'): ?>
-                                <a href="booking.php?court_id=<?= $court['id'] ?>" class="btn btn-primary btn-block">Booking Sekarang</a>
+                                <a href="booking.php?court_id=<?= $court['id'] ?>" class="btn btn-primary btn-block">Booking
+                                    Sekarang</a>
                             <?php elseif (!isset($_SESSION['user_id'])): ?>
                                 <a href="login.php" class="btn btn-secondary btn-block">Login untuk Booking</a>
                             <?php else: ?>
@@ -192,7 +198,8 @@ $imgIdxOutdoor = 0;
     <div class="container">
         <div class="section-title-center">
             <h2>Kenapa PadelClub?</h2>
-            <p>Fasilitas kelas dunia yang dirancang khusus untuk kenyamanan dan performa maksimal pemain padel masa kini.</p>
+            <p>Fasilitas kelas dunia yang dirancang khusus untuk kenyamanan dan performa maksimal pemain padel masa
+                kini.</p>
         </div>
         <div class="feature-grid">
             <div class="feature-card">

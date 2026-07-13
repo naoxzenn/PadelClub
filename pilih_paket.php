@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/bootstrap.php';
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
@@ -16,7 +16,6 @@ if (!isset($_SESSION['booking_draft'])) {
     header('Location: booking.php');
     exit;
 }
-require_once __DIR__ . '/config/koneksi.php';
 /** @var mysqli $conn */
 
 $pageTitle = 'Pilih Paket';

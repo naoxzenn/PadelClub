@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/bootstrap.php';
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
@@ -12,7 +12,6 @@ if ($_SESSION['role'] !== 'customer') {
     }
     exit;
 }
-require_once __DIR__ . '/config/koneksi.php';
 /** @var mysqli $conn */
 
 $pageTitle = 'Booking Lapangan';

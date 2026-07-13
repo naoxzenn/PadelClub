@@ -1,0 +1,27 @@
+# Environment
+.env
+
+# Composer
+/vendor/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Cache
+/cache/
+/storage/cache/
+
+# Node (jika ada)
+node_modules/
+
+# Build
+dist/
+build/

@@ -1,4 +1,14 @@
 <?php
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use Dotenv\Dotenv;
+
+// Load .env hanya sekali
+if (!isset($_ENV['APP_NAME'])) {
+    $dotenv = Dotenv::createImmutable(dirname(__DIR__));
+    $dotenv->load();
+}
+
 // Konfigurasi database
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
@@ -39,6 +49,17 @@ if ($check_bookings) {
     }
 }
 
+// 1c. Add clerk_user_id column to users table (for Clerk auth integration)
+$check_users_clerk = mysqli_query($conn, "DESCRIBE users");
+if ($check_users_clerk) {
+    $user_cols = [];
+    while ($row = mysqli_fetch_assoc($check_users_clerk)) {
+        $user_cols[] = $row['Field'];
+    }
+    if (!in_array('clerk_user_id', $user_cols)) {
+        mysqli_query($conn, "ALTER TABLE users ADD COLUMN clerk_user_id VARCHAR(255) NULL UNIQUE AFTER email");
+    }
+}
 
 // 2. Alter payments table to add necessary columns
 $check_pay = mysqli_query($conn, "DESCRIBE payments");
@@ -82,4 +103,6 @@ $check_kasir = mysqli_query($conn, "SELECT id FROM users WHERE email='kasir@MyPa
 if (mysqli_num_rows($check_kasir) === 0) {
     mysqli_query($conn, "INSERT INTO users (nama_lengkap, email, password, nomor_telepon, role) VALUES ('Kasir Utama', 'kasir@MyPadel.com', 'password', '089876543210', 'kasir')");
 }
+
+
 ?>
