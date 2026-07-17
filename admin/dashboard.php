@@ -5,126 +5,90 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 require_once __DIR__ . '/../config/koneksi.php';
-/** @var mysqli $conn */
+require_once __DIR__ . '/../helpers/BackupHelper.php';
+require_once __DIR__ . '/../models/BackupModel.php';
+require_once __DIR__ . '/../controllers/BackupController.php';
+
+$backupCtrl = new BackupController();
+$backupStats = $backupCtrl->getStats();
 
 $pageTitle = 'Dashboard Admin';
 $baseUrl = '../';
-$msg = '';
 
-// ---- AKSI ----
-// Update status booking
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    if ($_POST['action'] === 'update_status') {
-        $bid    = (int)$_POST['booking_id'];
-        $status = $_POST['status'];
-        $allowed = ['pending', 'confirmed', 'cancelled'];
-        if (in_array($status, $allowed)) {
-            $s = mysqli_prepare($conn, "UPDATE bookings SET status=? WHERE id=?");
-            if ($s) {
-                mysqli_stmt_bind_param($s, 'si', $status, $bid);
-                mysqli_stmt_execute($s);
-                mysqli_stmt_close($s);
-            }
-            $msg = 'Status booking #' . $bid . ' berhasil diubah ke ' . $status . '.';
-        }
-    } elseif ($_POST['action'] === 'verifikasi_payment') {
-        $pid = (int)$_POST['payment_id'];
-        $sv  = $_POST['status_verifikasi'];
-        $allowed_sv = ['menunggu', 'terverifikasi', 'ditolak'];
-        if (in_array($sv, $allowed_sv)) {
-            $s = mysqli_prepare($conn, "UPDATE payments SET status_verifikasi=? WHERE id=?");
-            if ($s) {
-                mysqli_stmt_bind_param($s, 'si', $sv, $pid);
-                mysqli_stmt_execute($s);
-                mysqli_stmt_close($s);
-            }
-            // Auto confirm booking jika terverifikasi
-            if ($sv === 'terverifikasi') {
-                $bp = mysqli_query($conn, "SELECT booking_id FROM payments WHERE id=$pid");
-                $bp = mysqli_fetch_assoc($bp);
-                if ($bp) {
-                    mysqli_query($conn, "UPDATE bookings SET status='confirmed' WHERE id={$bp['booking_id']}");
-                }
-            }
-            $msg = 'Verifikasi pembayaran #' . $pid . ' berhasil diperbarui.';
-        }
-    } elseif ($_POST['action'] === 'tambah_lapangan') {
-        $nama  = trim($_POST['nama_lapangan']);
-        $tipe  = $_POST['tipe_lapangan'];
-        $harga = (float)$_POST['harga_per_jam'];
-        $desk  = trim($_POST['deskripsi']);
-        if ($nama && in_array($tipe, ['Indoor', 'Outdoor']) && $harga > 0) {
-            $s = mysqli_prepare($conn,
-                "INSERT INTO courts (nama_lapangan, tipe_lapangan, harga_per_jam, deskripsi) VALUES (?, ?, ?, ?)"
-            );
-            if ($s) {
-                mysqli_stmt_bind_param($s, 'ssds', $nama, $tipe, $harga, $desk);
-                mysqli_stmt_execute($s);
-                mysqli_stmt_close($s);
-            }
-            $msg = 'Lapangan baru berhasil ditambahkan.';
-        }
-    } elseif ($_POST['action'] === 'toggle_court') {
-        $cid = (int)$_POST['court_id'];
-        $cs  = $_POST['status'];
-        $s = mysqli_prepare($conn, "UPDATE courts SET status=? WHERE id=?");
-        if ($s) {
-            mysqli_stmt_bind_param($s, 'si', $cs, $cid);
-            mysqli_stmt_execute($s);
-            mysqli_stmt_close($s);
-        }
-        $msg = 'Status lapangan berhasil diubah.';
-    }
-}
+// ---- AMBIL DATA STATISTIK ----
+// Total Booking
+$totalBooking = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings"))[0];
 
-// ---- AMBIL DATA ----
-// Statistik
-$totalBooking    = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings"))[0];
-$totalConfirmed  = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE status='confirmed'"))[0];
-$totalPending    = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE status='pending'"))[0];
-$totalCancelled  = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE status='cancelled'"))[0];
-$totalPendapatan = mysqli_fetch_row(mysqli_query($conn,
-    "SELECT COALESCE(SUM(b.total_harga),0) FROM bookings b JOIN payments p ON p.booking_id=b.id WHERE p.status_verifikasi='terverifikasi'"))[0];
-$totalUsers      = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM users WHERE role='customer'"))[0];
+// Booking Hari Ini
+$bookingHariIni = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE DATE(tanggal_booking) = CURDATE()"))[0];
 
-// Semua Booking
-$bookings = mysqli_fetch_all(mysqli_query($conn,
-    "SELECT b.*, c.nama_lapangan, u.nama_lengkap, u.email, u.nomor_telepon,
-            p.metode_bayar, p.status_verifikasi, p.id AS payment_id, p.bukti_transfer
-     FROM bookings b
-     JOIN courts c ON b.court_id = c.id
-     JOIN users u ON b.user_id = u.id
-     LEFT JOIN payments p ON p.booking_id = b.id
-     ORDER BY b.created_at DESC
+// Booking Bulan Ini
+$bookingBulanIni = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE MONTH(tanggal_booking) = MONTH(CURDATE()) AND YEAR(tanggal_booking) = YEAR(CURDATE())"))[0];
+
+// Total Customer
+$totalCustomer = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM users WHERE role = 'customer'"))[0];
+
+// Total Lapangan
+$totalLapangan = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM courts"))[0];
+
+// Pendapatan Hari Ini
+$pendapatanHariIni = (float)mysqli_fetch_row(mysqli_query($conn, 
+    "SELECT COALESCE(SUM(jumlah_bayar), 0) FROM payments WHERE status_verifikasi = 'terverifikasi' AND DATE(waktu_bayar) = CURDATE()"
+))[0];
+
+// Pendapatan Bulan Ini
+$pendapatanBulanIni = (float)mysqli_fetch_row(mysqli_query($conn, 
+    "SELECT COALESCE(SUM(jumlah_bayar), 0) FROM payments WHERE status_verifikasi = 'terverifikasi' AND MONTH(waktu_bayar) = MONTH(CURDATE()) AND YEAR(waktu_bayar) = YEAR(CURDATE())"
+))[0];
+
+// Booking Pending
+$bookingPending = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE status = 'pending'"))[0];
+
+// Booking Confirmed
+$bookingConfirmed = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE status = 'confirmed'"))[0];
+
+// Booking Cancelled
+$bookingCancelled = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE status = 'cancelled'"))[0];
+
+
+// ---- AMBIL DATA RINGKASAN ----
+// 5 Booking Terbaru
+$recentBookings = mysqli_fetch_all(mysqli_query($conn, "
+    SELECT b.*, c.nama_lapangan, u.nama_lengkap, u.email
+    FROM bookings b
+    JOIN courts c ON b.court_id = c.id
+    JOIN users u ON b.user_id = u.id
+    ORDER BY b.created_at DESC
+    LIMIT 5
 "), MYSQLI_ASSOC);
 
-// Semua Lapangan
-$courts = mysqli_fetch_all(mysqli_query($conn,
-    "SELECT * FROM courts ORDER BY nama_lapangan"), MYSQLI_ASSOC);
-
-// Semua User
-$users = mysqli_fetch_all(mysqli_query($conn,
-    "SELECT u.*, COUNT(b.id) AS total_booking FROM users u
-     LEFT JOIN bookings b ON b.user_id = u.id
-     WHERE u.role = 'customer'
-     GROUP BY u.id ORDER BY u.created_at DESC"
-), MYSQLI_ASSOC);
+// 5 Pembayaran Menunggu Verifikasi
+$recentPayments = mysqli_fetch_all(mysqli_query($conn, "
+    SELECT p.*, u.nama_lengkap, c.nama_lapangan, b.tanggal_booking
+    FROM payments p
+    JOIN bookings b ON p.booking_id = b.id
+    JOIN users u ON b.user_id = u.id
+    JOIN courts c ON b.court_id = c.id
+    WHERE p.status_verifikasi = 'menunggu'
+    ORDER BY p.waktu_bayar DESC
+    LIMIT 5
+"), MYSQLI_ASSOC);
 ?>
 <?php include __DIR__ . '/../includes/header.php'; ?>
-<!-- Bootstrap Icons CDN -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
 <section class="section" style="padding-top: 10px;">
     <div class="container" style="max-width: 100%; padding: 0;">
+        
+        <div style="margin-bottom: 28px;">
+            <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--navy); margin-bottom: 6px;">Selamat Datang, <?= htmlspecialchars($_SESSION['nama'] ?? 'Admin') ?>!</h1>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Berikut adalah ringkasan performa operasional PadelClub hari ini.</p>
+        </div>
 
-        <?php if ($msg): ?>
-            <div class="alert alert-success" style="margin-bottom: 24px;"><?= htmlspecialchars($msg) ?></div>
-        <?php endif; ?>
-
-        <!-- Statistik -->
+        <!-- 10 KPI Statistics Grid -->
         <div class="dashboard-stat-grid">
+            <!-- Total Booking -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon">
+                <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
                     <span class="material-symbols-outlined">calendar_month</span>
                 </div>
                 <div class="stat-card-info">
@@ -132,333 +96,254 @@ $users = mysqli_fetch_all(mysqli_query($conn,
                     <span class="stat-card-label">Total Booking</span>
                 </div>
             </div>
+
+            <!-- Booking Hari Ini -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon success-icon">
-                    <span class="material-symbols-outlined">check_circle</span>
+                <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
+                    <span class="material-symbols-outlined">today</span>
                 </div>
                 <div class="stat-card-info">
-                    <span class="stat-card-value"><?= $totalConfirmed ?></span>
-                    <span class="stat-card-label">Confirmed</span>
+                    <span class="stat-card-value"><?= $bookingHariIni ?></span>
+                    <span class="stat-card-label">Booking Hari Ini</span>
                 </div>
             </div>
+
+            <!-- Booking Bulan Ini -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon warning-icon">
-                    <span class="material-symbols-outlined">hourglass_empty</span>
+                <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
+                    <span class="material-symbols-outlined">date_range</span>
                 </div>
                 <div class="stat-card-info">
-                    <span class="stat-card-value"><?= $totalPending ?></span>
-                    <span class="stat-card-label">Pending</span>
+                    <span class="stat-card-value"><?= $bookingBulanIni ?></span>
+                    <span class="stat-card-label">Booking Bulan Ini</span>
                 </div>
             </div>
+
+            <!-- Total Customers -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background:rgba(239,68,68,0.08); color:#EF4444;">
-                    <span class="material-symbols-outlined">cancel</span>
+                <div class="stat-card-icon" style="background: rgba(59, 130, 246, 0.08); color: #3B82F6;">
+                    <span class="material-symbols-outlined">groups</span>
                 </div>
                 <div class="stat-card-info">
-                    <span class="stat-card-value"><?= $totalCancelled ?></span>
-                    <span class="stat-card-label">Cancelled</span>
+                    <span class="stat-card-value"><?= $totalCustomer ?></span>
+                    <span class="stat-card-label">Total Customer</span>
                 </div>
             </div>
-            <div class="dashboard-stat-card" style="grid-column: span 2;">
-                <div class="stat-card-icon success-icon">
+
+            <!-- Total Lapangan -->
+            <div class="dashboard-stat-card">
+                <div class="stat-card-icon" style="background: rgba(34, 197, 94, 0.08); color: var(--green);">
+                    <span class="material-symbols-outlined">sports_tennis</span>
+                </div>
+                <div class="stat-card-info">
+                    <span class="stat-card-value"><?= $totalLapangan ?></span>
+                    <span class="stat-card-label">Total Lapangan</span>
+                </div>
+            </div>
+
+            <!-- Pendapatan Hari Ini -->
+            <div class="dashboard-stat-card">
+                <div class="stat-card-icon" style="background: rgba(34, 197, 94, 0.08); color: var(--green);">
                     <span class="material-symbols-outlined">payments</span>
                 </div>
                 <div class="stat-card-info">
-                    <span class="stat-card-value">Rp <?= number_format($totalPendapatan, 0, ',', '.') ?></span>
-                    <span class="stat-card-label">Pendapatan Terverifikasi</span>
+                    <span class="stat-card-value" style="font-size:1.3rem;">Rp <?= number_format($pendapatanHariIni, 0, ',', '.') ?></span>
+                    <span class="stat-card-label">Pendapatan Hari Ini</span>
+                </div>
+            </div>
+
+            <!-- Pendapatan Bulan Ini -->
+            <div class="dashboard-stat-card">
+                <div class="stat-card-icon" style="background: rgba(34, 197, 94, 0.08); color: var(--green);">
+                    <span class="material-symbols-outlined">account_balance_wallet</span>
+                </div>
+                <div class="stat-card-info">
+                    <span class="stat-card-value" style="font-size:1.3rem;">Rp <?= number_format($pendapatanBulanIni, 0, ',', '.') ?></span>
+                    <span class="stat-card-label">Pendapatan Bulan Ini</span>
+                </div>
+            </div>
+
+            <!-- Booking Pending -->
+            <div class="dashboard-stat-card">
+                <div class="stat-card-icon" style="background: rgba(245, 158, 11, 0.08); color: #F59E0B;">
+                    <span class="material-symbols-outlined">hourglass_empty</span>
+                </div>
+                <div class="stat-card-info">
+                    <span class="stat-card-value"><?= $bookingPending ?></span>
+                    <span class="stat-card-label">Booking Pending</span>
+                </div>
+            </div>
+
+            <!-- Booking Confirmed -->
+            <div class="dashboard-stat-card">
+                <div class="stat-card-icon" style="background: rgba(34, 197, 94, 0.08); color: var(--green);">
+                    <span class="material-symbols-outlined">check_circle</span>
+                </div>
+                <div class="stat-card-info">
+                    <span class="stat-card-value"><?= $bookingConfirmed ?></span>
+                    <span class="stat-card-label">Booking Confirmed</span>
+                </div>
+            </div>
+
+            <!-- Booking Cancelled -->
+            <div class="dashboard-stat-card">
+                <div class="stat-card-icon" style="background: rgba(239, 68, 68, 0.08); color: #EF4444;">
+                    <span class="material-symbols-outlined">cancel</span>
+                </div>
+                <div class="stat-card-info">
+                    <span class="stat-card-value"><?= $bookingCancelled ?></span>
+                    <span class="stat-card-label">Booking Cancelled</span>
                 </div>
             </div>
         </div>
 
-        <!-- TABS -->
-        <div class="tabs" id="admin-tabs" style="margin-bottom: 24px;">
-            <button class="tab-btn active" onclick="showTab('tab-booking', this)">Booking</button>
-            <button class="tab-btn" onclick="showTab('tab-payment', this)">Pembayaran</button>
-            <button class="tab-btn" onclick="showTab('tab-lapangan', this)">Lapangan</button>
-            <button class="tab-btn" onclick="showTab('tab-users', this)">Pengguna</button>
+        <!-- Backup Overview Row -->
+        <div style="margin-bottom: 32px;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--navy); margin-bottom: 16px; display:flex; align-items:center; gap:8px;">
+                <span class="material-symbols-outlined" style="color: var(--blue);">cloud_sync</span> Status Cadangan Sistem (Database Backup)
+            </h3>
+            <div class="dashboard-stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                <!-- Backup Terakhir -->
+                <div class="dashboard-stat-card">
+                    <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
+                        <span class="material-symbols-outlined">schedule</span>
+                    </div>
+                    <div class="stat-card-info">
+                        <span class="stat-card-value" style="font-size: 1.1rem;"><?= $backupStats['last_backup'] ?></span>
+                        <span class="stat-card-label">Backup Terakhir</span>
+                    </div>
+                </div>
+
+                <!-- Status Backup -->
+                <?php
+                $healthColor = 'var(--green)';
+                $healthLabel = 'Sehat (Aktif)';
+                $healthIcon = 'check_circle';
+                if ($backupStats['health'] === 'yellow') {
+                    $healthColor = '#F59E0B';
+                    $healthLabel = 'Perlu Backup (> 7 Hari)';
+                    $healthIcon = 'warning';
+                } elseif ($backupStats['health'] === 'red') {
+                    $healthColor = '#EF4444';
+                    $healthLabel = 'Sangat Kritis / Gagal';
+                    $healthIcon = 'error';
+                }
+                ?>
+                <div class="dashboard-stat-card">
+                    <div class="stat-card-icon" style="background: <?= $healthColor ?>15; color: <?= $healthColor ?>;">
+                        <span class="material-symbols-outlined"><?= $healthIcon ?></span>
+                    </div>
+                    <div class="stat-card-info">
+                        <span class="stat-card-value" style="font-size: 1.1rem; color: <?= $healthColor ?>;"><?= $healthLabel ?></span>
+                        <span class="stat-card-label">Status Backup</span>
+                    </div>
+                </div>
+
+                <!-- Jumlah Backup -->
+                <div class="dashboard-stat-card">
+                    <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
+                        <span class="material-symbols-outlined">folder_zip</span>
+                    </div>
+                    <div class="stat-card-info">
+                        <span class="stat-card-value"><?= $backupStats['total_count'] ?> File</span>
+                        <span class="stat-card-label">Jumlah File Backup</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- TAB: BOOKING -->
-        <div id="tab-booking" class="tab-content active">
-            <div class="card">
-                <h2>Semua Data Booking</h2>
+        <!-- Recent Activities Grid -->
+        <div class="admin-grid-activities">
+            
+            <!-- Recent Bookings Table -->
+            <div class="card" style="margin: 0; padding: 24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--navy); margin:0;">5 Booking Terbaru</h2>
+                    <a href="bookings.php" style="font-size:0.85rem; color:var(--blue); font-weight:600; text-decoration:none; display:flex; align-items:center; gap:4px;">
+                        Lihat Semua <span class="material-symbols-outlined" style="font-size:1.1rem;">arrow_forward</span>
+                    </a>
+                </div>
                 <div class="table-responsive">
-                    <table id="tabel-booking">
+                    <table style="font-size: 0.82rem; min-width:unset; width:100%;">
                         <thead>
                             <tr>
-                                <th>#</th>
+                                <th>#ID</th>
                                 <th>Customer</th>
                                 <th>Lapangan</th>
                                 <th>Tanggal</th>
-                                <th>Jam</th>
-                                <th>Total</th>
                                 <th>Status</th>
-                                <th>Ubah Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($bookings as $i => $b): ?>
+                            <?php foreach ($recentBookings as $b): ?>
                                 <tr>
-                                    <td><?= $b['id'] ?></td>
+                                    <td>#<?= $b['id'] ?></td>
                                     <td>
-                                        <strong><?= htmlspecialchars($b['nama_lengkap']) ?></strong><br>
-                                        <small><?= htmlspecialchars($b['email']) ?></small>
+                                        <strong><?= htmlspecialchars($b['nama_lengkap']) ?></strong>
                                     </td>
                                     <td><?= htmlspecialchars($b['nama_lapangan']) ?></td>
                                     <td><?= date('d/m/Y', strtotime($b['tanggal_booking'])) ?></td>
-                                    <td><?= substr($b['jam_mulai'],0,5) ?> – <?= substr($b['jam_selesai'],0,5) ?></td>
-                                    <td>Rp <?= number_format($b['total_harga'], 0, ',', '.') ?></td>
                                     <td>
                                         <?php if ($b['status'] === 'cancelled'): ?>
-                                            <span class="status-cancelled">
-                                                <i class="bi bi-x-circle-fill"></i> Dibatalkan
-                                                <?php if (!empty($b['cancelled_at'])): ?>
-                                                <br><small style="font-size:.7rem;color:#b91c1c;">Oleh Pelanggan (<?= date('d/m H:i', strtotime($b['cancelled_at'])) ?>)</small>
-                                                <?php endif; ?>
-                                            </span>
+                                            <span class="status-cancelled" style="padding:2px 8px; font-size:.7rem;">Dibatalkan</span>
                                         <?php elseif ($b['status'] === 'confirmed'): ?>
-                                            <span class="status-confirmed"><i class="bi bi-check-circle-fill"></i> Confirmed</span>
+                                            <span class="status-confirmed" style="padding:2px 8px; font-size:.7rem;">Confirmed</span>
                                         <?php else: ?>
-                                            <span class="status-pending"><i class="bi bi-hourglass-split"></i> Pending</span>
+                                            <span class="status-pending" style="padding:2px 8px; font-size:.7rem;">Pending</span>
                                         <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <form method="POST" style="display:flex; gap:4px; align-items:center;">
-                                            <input type="hidden" name="action" value="update_status">
-                                            <input type="hidden" name="booking_id" value="<?= $b['id'] ?>">
-                                            <select name="status" style="padding:4px 6px; font-size:13px; border:1px solid #ccc; border-radius:3px;">
-                                                <option value="pending" <?= $b['status']==='pending' ? 'selected' : '' ?>>Pending</option>
-                                                <option value="confirmed" <?= $b['status']==='confirmed' ? 'selected' : '' ?>>Confirmed</option>
-                                                <option value="cancelled" <?= $b['status']==='cancelled' ? 'selected' : '' ?>>Dibatalkan</option>
-                                            </select>
-                                            <button type="submit" class="btn btn-sm btn-primary">Ubah</button>
-                                        </form>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
+                            <?php if (empty($recentBookings)): ?>
+                                <tr><td colspan="5" style="text-align:center; color:#aaa; padding:12px;">Belum ada booking terbaru.</td></tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
             </div>
-        </div>
 
-        <!-- TAB: PEMBAYARAN -->
-        <div id="tab-payment" class="tab-content">
-            <div class="card">
-                <h2>Data Pembayaran</h2>
+            <!-- Pending Payments Table -->
+            <div class="card" style="margin: 0; padding: 24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--navy); margin:0;">Menunggu Verifikasi Pembayaran</h2>
+                    <a href="payments.php" style="font-size:0.85rem; color:var(--blue); font-weight:600; text-decoration:none; display:flex; align-items:center; gap:4px;">
+                        Lihat Semua <span class="material-symbols-outlined" style="font-size:1.1rem;">arrow_forward</span>
+                    </a>
+                </div>
                 <div class="table-responsive">
-                    <table id="tabel-payment">
+                    <table style="font-size: 0.82rem; min-width:unset; width:100%;">
                         <thead>
                             <tr>
                                 <th>Booking #</th>
                                 <th>Customer</th>
                                 <th>Lapangan</th>
-                                <th>Metode</th>
                                 <th>Jumlah</th>
-                                <th>Bukti</th>
-                                <th>Status Verif</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php
-                            $hasPay = array_filter($bookings, fn($b) => $b['payment_id']);
-                            foreach ($hasPay as $b):
-                                $sv = $b['status_verifikasi'];
-                                $sc = $sv === 'terverifikasi' ? 'confirmed' : ($sv === 'ditolak' ? 'cancelled' : 'pending');
-                            ?>
+                            <?php foreach ($recentPayments as $p): ?>
                                 <tr>
-                                    <td>#<?= $b['id'] ?></td>
-                                    <td><?= htmlspecialchars($b['nama_lengkap']) ?></td>
-                                    <td><?= htmlspecialchars($b['nama_lapangan']) ?></td>
-                                    <td><?= $b['metode_bayar'] ?></td>
-                                    <td>Rp <?= number_format($b['total_harga'], 0, ',', '.') ?></td>
+                                    <td>#<?= $p['booking_id'] ?></td>
+                                    <td><strong><?= htmlspecialchars($p['nama_lengkap']) ?></strong></td>
+                                    <td><?= htmlspecialchars($p['nama_lapangan']) ?></td>
+                                    <td>Rp <?= number_format($p['jumlah_bayar'], 0, ',', '.') ?></td>
                                     <td>
-                                        <?php if ($b['bukti_transfer']): ?>
-                                            <a href="../uploads/bukti_transfer/<?= htmlspecialchars($b['bukti_transfer']) ?>"
-                                               target="_blank" class="btn btn-sm btn-secondary">Lihat</a>
-                                        <?php else: ?>
-                                            <span style="color:#aaa;">—</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><span class="status-<?= $sc ?>"><?= ucfirst($sv) ?></span></td>
-                                    <td>
-                                        <form method="POST" style="display:flex; gap:4px; align-items:center;">
-                                            <input type="hidden" name="action" value="verifikasi_payment">
-                                            <input type="hidden" name="payment_id" value="<?= $b['payment_id'] ?>">
-                                            <select name="status_verifikasi" style="padding:4px 6px; font-size:13px; border:1px solid #ccc; border-radius:3px;">
-                                                <option value="menunggu" <?= $sv==='menunggu' ? 'selected' : '' ?>>Menunggu</option>
-                                                <option value="terverifikasi" <?= $sv==='terverifikasi' ? 'selected' : '' ?>>Terverifikasi</option>
-                                                <option value="ditolak" <?= $sv==='ditolak' ? 'selected' : '' ?>>Ditolak</option>
-                                            </select>
-                                            <button type="submit" class="btn btn-sm btn-success">Simpan</button>
-                                        </form>
+                                        <a href="payments.php" class="btn btn-sm btn-primary" style="padding: 4px 10px; font-size: 0.72rem; border-radius: 6px;">Verifikasi</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
-                            <?php if (empty($hasPay)): ?>
-                                <tr><td colspan="8" style="text-align:center; color:#aaa; padding:16px;">Belum ada data pembayaran.</td></tr>
+                            <?php if (empty($recentPayments)): ?>
+                                <tr><td colspan="5" style="text-align:center; color:#aaa; padding:12px;">Semua pembayaran terverifikasi.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
             </div>
-        </div>
 
-        <!-- TAB: LAPANGAN -->
-        <div id="tab-lapangan" class="tab-content">
-            <!-- Form Tambah Lapangan -->
-            <div class="card">
-                <h2>Tambah Lapangan Baru</h2>
-                <form method="POST" id="form-tambah-lapangan">
-                    <input type="hidden" name="action" value="tambah_lapangan">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="nama_lapangan">Nama Lapangan</label>
-                            <input type="text" id="nama_lapangan" name="nama_lapangan"
-                                   placeholder="Contoh: Lapangan E" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="tipe_lapangan">Tipe</label>
-                            <select id="tipe_lapangan" name="tipe_lapangan" required>
-                                <option value="Indoor">Indoor</option>
-                                <option value="Outdoor">Outdoor</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="harga_per_jam">Harga per Jam (Rp)</label>
-                            <input type="number" id="harga_per_jam" name="harga_per_jam"
-                                   placeholder="150000" min="0" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="deskripsi">Deskripsi</label>
-                            <input type="text" id="deskripsi" name="deskripsi" placeholder="Deskripsi singkat">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-success" id="btn-tambah-lapangan">+ Tambah Lapangan</button>
-                </form>
-            </div>
-
-            <!-- Daftar Lapangan -->
-            <div class="card" style="margin-top: 24px;">
-                <h2>Daftar Lapangan</h2>
-                <div class="table-responsive">
-                    <table id="tabel-lapangan">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Nama Lapangan</th>
-                                <th>Tipe</th>
-                                <th>Harga/Jam</th>
-                                <th>Deskripsi</th>
-                                <th>Status</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($courts as $c): ?>
-                                <tr>
-                                    <td><?= $c['id'] ?></td>
-                                    <td><?= htmlspecialchars($c['nama_lapangan']) ?></td>
-                                    <td><span class="badge badge-<?= strtolower($c['tipe_lapangan']) ?>"><?= $c['tipe_lapangan'] ?></span></td>
-                                    <td>Rp <?= number_format($c['harga_per_jam'], 0, ',', '.') ?></td>
-                                    <td><?= htmlspecialchars($c['deskripsi'] ?? '-') ?></td>
-                                    <td>
-                                        <span class="<?= $c['status']==='aktif' ? 'status-confirmed' : 'status-cancelled' ?>">
-                                            <?= ucfirst($c['status']) ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <form method="POST" style="display:inline;">
-                                            <input type="hidden" name="action" value="toggle_court">
-                                            <input type="hidden" name="court_id" value="<?= $c['id'] ?>">
-                                            <input type="hidden" name="status"
-                                                   value="<?= $c['status']==='aktif' ? 'nonaktif' : 'aktif' ?>">
-                                            <button type="submit" class="btn btn-sm <?= $c['status']==='aktif' ? 'btn-warning' : 'btn-success' ?>">
-                                                <?= $c['status']==='aktif' ? 'Nonaktifkan' : 'Aktifkan' ?>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB: PENGGUNA -->
-        <div id="tab-users" class="tab-content">
-            <div class="card">
-                <h2>Daftar Pengguna (Customer)</h2>
-                <div class="table-responsive">
-                    <table id="tabel-users">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Nama</th>
-                                <th>Email</th>
-                                <th>Telepon</th>
-                                <th>Total Booking</th>
-                                <th>Bergabung</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($users as $i => $u): ?>
-                                <tr>
-                                    <td><?= $i + 1 ?></td>
-                                    <td><?= htmlspecialchars($u['nama_lengkap']) ?></td>
-                                    <td><?= htmlspecialchars($u['email']) ?></td>
-                                    <td><?= htmlspecialchars($u['nomor_telepon'] ?? '-') ?></td>
-                                    <td><?= $u['total_booking'] ?></td>
-                                    <td><?= date('d/m/Y', strtotime($u['created_at'])) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                            <?php if (empty($users)): ?>
-                                <tr><td colspan="6" style="text-align:center; color:#aaa;">Belum ada customer terdaftar.</td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
 
     </div>
 </section>
-
-<script>
-function showTab(tabId, btn) {
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-    if (btn) {
-        btn.classList.add('active');
-    }
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tab = urlParams.get('tab');
-    if (tab) {
-        const tabMap = {
-            'booking': 'tab-booking',
-            'payment': 'tab-payment',
-            'lapangan': 'tab-lapangan',
-            'users': 'tab-users'
-        };
-        const tabId = tabMap[tab];
-        if (tabId) {
-            const btn = document.querySelector(`[onclick*="${tabId}"]`);
-            if (btn) {
-                btn.click();
-            } else {
-                showTab(tabId, null);
-            }
-        }
-    }
-});
-</script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

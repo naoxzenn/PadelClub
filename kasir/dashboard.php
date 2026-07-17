@@ -24,19 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $msg = 'Gagal: Booking #' . $bid . ' telah dibatalkan oleh pelanggan.';
             $msg_type = 'error';
         } else {
-            $s = mysqli_prepare($conn, "UPDATE bookings SET status='confirmed' WHERE id=?");
-            if ($s) {
-                mysqli_stmt_bind_param($s, 'i', $bid);
-                if (mysqli_stmt_execute($s)) {
-                    $msg = 'Booking #' . $bid . ' berhasil dikonfirmasi.';
-                } else {
-                    $msg = 'Gagal mengonfirmasi booking.';
-                    $msg_type = 'error';
-                }
-                mysqli_stmt_close($s);
-            } else {
-                die("Query error: " . mysqli_error($conn));
-            }
+            updateBookingVerification($conn, $bid, 'confirmed', $_SESSION['user_id']);
+            $msg = 'Booking #' . $bid . ' berhasil dikonfirmasi.';
         }
     } elseif ($action === 'cancel_booking') {
         $bid = (int)$_POST['booking_id'];
@@ -107,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 
                 if (mysqli_stmt_execute($stmt)) {
                     // Update booking status to confirmed
-                    mysqli_query($conn, "UPDATE bookings SET status='confirmed' WHERE id=$bid");
+                    updateBookingVerification($conn, $bid, 'confirmed', $_SESSION['user_id']);
                     $msg = 'Pembayaran Cash Berhasil! Struk pembayaran telah dibuat dengan nomor ' . $receipt_number . '.';
                     
                     // Tambahkan tanda bahwa struk siap dicetak

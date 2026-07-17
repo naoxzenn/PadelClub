@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/bootstrap.php';
+session_start();
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
@@ -12,6 +12,8 @@ if ($_SESSION['role'] !== 'customer') {
     }
     exit;
 }
+require_once __DIR__ . '/config/koneksi.php';
+require_once __DIR__ . '/helpers/QRHelper.php';
 /** @var mysqli $conn */
 
 $pageTitle = 'Dashboard Saya';
@@ -126,6 +128,7 @@ $total_pengeluaran = array_sum(array_column(
                                 <th>Total</th>
                                 <th>Status</th>
                                 <th>Pembayaran</th>
+                                <th>Kode &amp; QR</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -144,23 +147,46 @@ $total_pengeluaran = array_sum(array_column(
                                     <td>Rp <?= number_format($b['total_harga'], 0, ',', '.') ?></td>
                                     <td><span class="status-<?= $b['status'] ?>"><?= ucfirst($b['status']) ?></span></td>
                                     <td>
-                                        <?php if ($b['metode_bayar']): ?>
-                                            <?= $b['metode_bayar'] ?><br>
-                                            <small><?= ucfirst($b['status_verifikasi'] ?? '-') ?></small>
+                                         <?php if ($b['metode_bayar']): ?>
+                                             <?= htmlspecialchars($b['metode_bayar']) ?><br>
+                                             <small><?= ucfirst(htmlspecialchars($b['payment_status'] ?? '-')) ?></small>
+                                         <?php else: ?>
+                                             <span style="color:#aaa;">Belum bayar</span>
+                                         <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($b['payment_status'] === 'Verified'): ?>
+                                            <code style="font-family: monospace; font-size: 0.9rem; font-weight: 700; color: var(--navy); display:block; margin-bottom:4px;"><?= htmlspecialchars($b['booking_code']) ?></code>
+                                            <a href="booking-detail.php?code=<?= $b['booking_code'] ?>">
+                                                <img src="<?= QRHelper::generateQRCodeDataUri(QRHelper::generateCheckinUrl($b['booking_code'])) ?>" alt="QR" style="width: 50px; height: 50px; background:#fff; padding:2px; border:1px solid var(--border); border-radius:4px; display:inline-block;">
+                                            </a>
                                         <?php else: ?>
-                                            <span style="color:#aaa;">Belum bayar</span>
+                                            <span style="font-size: 0.8rem; color: var(--text-muted);">Menunggu verifikasi</span>
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <a href="rincian_pembayaran.php?booking_id=<?= $b['id'] ?>"
-                                           class="btn btn-sm btn-primary">Detail</a>
-                                        <?php if ($b['status'] === 'pending'): ?>
-                                            <a href="dashboarduser.php?cancel_id=<?= $b['id'] ?>"
-                                               class="btn btn-sm btn-danger"
-                                               onclick="return confirm('Yakin ingin membatalkan booking ini?')">
-                                               Batal
-                                            </a>
-                                        <?php endif; ?>
+                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                            <?php if ($b['payment_status'] === 'Verified'): ?>
+                                                <a href="booking-detail.php?code=<?= $b['booking_code'] ?>" class="btn btn-sm btn-primary" style="display:inline-flex; align-items:center; gap:4px; justify-content:center;">
+                                                    <span class="material-symbols-outlined" style="font-size:0.95rem;">confirmation_number</span> Tiket
+                                                </a>
+                                                <a href="invoice.php?code=<?= $b['booking_code'] ?>" class="btn btn-sm btn-outline" style="display:inline-flex; align-items:center; gap:4px; justify-content:center;">
+                                                    <span class="material-symbols-outlined" style="font-size:0.95rem;">receipt_long</span> Invoice
+                                                </a>
+                                                <a href="download_qr.php?code=<?= $b['booking_code'] ?>" class="btn btn-sm btn-outline" style="display:inline-flex; align-items:center; gap:4px; justify-content:center;">
+                                                    <span class="material-symbols-outlined" style="font-size:0.95rem;">download</span> QR Code
+                                                </a>
+                                            <?php else: ?>
+                                                <a href="rincian_pembayaran.php?booking_id=<?= $b['id'] ?>" class="btn btn-sm btn-primary" style="display:inline-flex; align-items:center; gap:4px; justify-content:center;">
+                                                    <span class="material-symbols-outlined" style="font-size:0.95rem;">payments</span> Detail Bayar
+                                                </a>
+                                            <?php endif; ?>
+                                            <?php if ($b['status'] === 'pending'): ?>
+                                                <a href="dashboarduser.php?cancel_id=<?= $b['id'] ?>" class="btn btn-sm btn-danger" style="display:inline-flex; align-items:center; gap:4px; justify-content:center;" onclick="return confirm('Apakah Anda yakin ingin membatalkan booking ini?');">
+                                                    <span class="material-symbols-outlined" style="font-size:0.95rem;">cancel</span> Batal
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

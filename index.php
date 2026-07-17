@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/bootstrap.php';
+session_start();
 if (isset($_SESSION['user_id']) && $_SESSION['role'] !== 'customer') {
     if ($_SESSION['role'] === 'admin') {
         header('Location: admin/dashboard.php');
@@ -8,6 +8,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] !== 'customer') {
     }
     exit;
 }
+require_once __DIR__ . '/config/koneksi.php';
 /** @var mysqli $conn */
 
 $pageTitle = 'Beranda';
@@ -194,7 +195,7 @@ $imgIdxOutdoor = 0;
 </section>
 
 <!-- Kenapa PadelClub section -->
-<section class="section" style="background:#fff;">
+<section class="section section-white">
     <div class="container">
         <div class="section-title-center">
             <h2>Kenapa PadelClub?</h2>

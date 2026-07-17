@@ -8,14 +8,21 @@ $role = $_SESSION['role'] ?? '';
 
     <script>
         // Sidebar toggle for mobile/responsive dashboard
-        document.getElementById('sidebar-toggle')?.addEventListener('click', function () {
+        const toggleSidebar = () => {
             document.querySelector('.dashboard-sidebar')?.classList.toggle('show');
-        });
+        };
+        document.getElementById('sidebar-toggle')?.addEventListener('click', toggleSidebar);
+        document.getElementById('sidebar-toggle-admin')?.addEventListener('click', toggleSidebar);
+
         // Close sidebar on outside click on mobile
         document.addEventListener('click', function (e) {
             const sidebar = document.querySelector('.dashboard-sidebar');
-            const toggle = document.getElementById('sidebar-toggle');
-            if (sidebar && sidebar.classList.contains('show') && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
+            const toggle1 = document.getElementById('sidebar-toggle');
+            const toggle2 = document.getElementById('sidebar-toggle-admin');
+            const isClickInsideSidebar = sidebar && sidebar.contains(e.target);
+            const isClickToggle1 = toggle1 && toggle1.contains(e.target);
+            const isClickToggle2 = toggle2 && toggle2.contains(e.target);
+            if (sidebar && sidebar.classList.contains('show') && !isClickInsideSidebar && !isClickToggle1 && !isClickToggle2) {
                 sidebar.classList.remove('show');
             }
         });
@@ -84,28 +91,6 @@ $role = $_SESSION['role'] ?? '';
         document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
     </script>
 
-    <?php // Clerk signout handler — dipanggil saat redirect dari logout.php ?>
-    <script>
-        (async function handleClerkSignout() {
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('clerk_signout') !== '1') return;
-            try {
-                if (typeof initClerk === 'function') {
-                    const clerk = await initClerk();
-                    if (clerk.user) {
-                        await clerk.signOut();
-                    }
-                }
-            } catch (e) {
-                console.warn('Clerk signout:', e);
-            }
-            // Bersihkan parameter dari URL
-            params.delete('clerk_signout');
-            const clean = params.toString();
-            const newUrl = window.location.pathname + (clean ? '?' + clean : '');
-            window.history.replaceState({}, '', newUrl);
-        })();
-    </script>
 
     </body>
 

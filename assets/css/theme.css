@@ -1,0 +1,362 @@
+/* assets/css/theme.css */
+
+:root {
+    --card-bg: #ffffff;
+}
+[data-theme="dark"] {
+    --card-bg: #1b2432;
+}
+
+/* ── Dark Mode Variables ────────────────────────────────────────────────── */
+.dark-mode {
+    --surface: #0B0F19;      /* Deep dark background */
+    --surface-alt: #1E293B;  /* Slate gray-blue */
+    --navy: #F8FAFC;         /* Light color for headings and text */
+    --white: #111827;        /* Replace pure white components with dark slate */
+    --card-bg: #1b2432;      /* Explicit card background for dark mode */
+    --text: #F8FAFC;         /* Off-white text */
+    --text-muted: #94A3B8;   /* Light gray-blue text */
+    --border: #334155;       /* Slate border */
+    
+    /* Shadows */
+    --shadow-sm: 0 4px 16px -4px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 16px 40px -10px rgba(0, 0, 0, 0.7);
+    --shadow-glow: 0 10px 25px -5px rgba(14, 165, 233, 0.15);
+}
+
+/* ── Unified Animations & Transitions ─────────────────────────────────────── */
+body, 
+body *,
+.nav,
+.dashboard-sidebar,
+.dashboard-header,
+.card,
+.summary-box,
+.court-card,
+.feature-card,
+.modal-box,
+.toast,
+input,
+select,
+textarea,
+table,
+th,
+td {
+    transition: background-color 0.25s ease, 
+                color 0.25s ease, 
+                border-color 0.25s ease, 
+                box-shadow 0.25s ease !important;
+}
+
+/* ── Theme Toggle Button (Guest Navbar) ─────────────────────────────────── */
+.theme-toggle-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.25s ease;
+    margin-right: 8px;
+    padding: 0;
+}
+.theme-toggle-btn:hover {
+    color: var(--blue);
+    border-color: var(--blue);
+    background: var(--surface-alt);
+    transform: scale(1.05);
+}
+
+/* ── Sidebar Theme Toggle Button (Admin & Kasir) ────────────────────────── */
+.sidebar-theme-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    width: 100%;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    transition: all 0.25s ease;
+    margin-bottom: 4px;
+}
+.sidebar-theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+/* ── Overrides to Maintain Dark Colors on Specific Sections ──────────────── */
+.dark-mode .dashboard-sidebar {
+    background-color: #0B0F19 !important;
+    border-right: 1px solid #1E293B !important;
+}
+
+.dark-mode .cta-banner {
+    background-color: #0B0F19 !important;
+}
+
+.dark-mode .contact-info-card {
+    background-color: #0B0F19 !important;
+}
+
+.dark-mode #sidebar-toggle-admin {
+    background-color: var(--surface-alt) !important;
+    color: var(--blue) !important;
+}
+
+.dark-mode .hero-tentang {
+    background: radial-gradient(ellipse at 0% 0%, rgba(34, 197, 94, 0.15) 0%, transparent 60%),
+                radial-gradient(ellipse at 100% 100%, rgba(14, 165, 233, 0.15) 0%, transparent 60%),
+                #0B0F19 !important;
+}
+
+/* ── Overrides for Hardcoded White Components in style.css ───────────────── */
+.dark-mode .auth-box,
+[data-theme="dark"] .auth-box,
+.dark-mode .card,
+[data-theme="dark"] .card,
+.dark-mode .summary-box,
+[data-theme="dark"] .summary-box,
+.dark-mode .court-card,
+[data-theme="dark"] .court-card,
+.dark-mode .modal-box,
+[data-theme="dark"] .modal-box,
+.dark-mode .toast,
+[data-theme="dark"] .toast,
+.dark-mode .dashboard-stat-card,
+[data-theme="dark"] .dashboard-stat-card,
+.dark-mode .search-card,
+[data-theme="dark"] .search-card,
+.dark-mode .padel-card,
+[data-theme="dark"] .padel-card,
+.dark-mode .faq-details,
+[data-theme="dark"] .faq-details,
+.dark-mode .faq-details summary,
+[data-theme="dark"] .faq-details summary,
+.dark-mode .contact-form-card,
+[data-theme="dark"] .contact-form-card,
+.dark-mode .feature-card,
+[data-theme="dark"] .feature-card {
+    background-color: var(--card-bg) !important;
+    background: var(--card-bg) !important;
+    border-color: var(--border) !important;
+    color: var(--text) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+.dark-mode .tab-btn {
+    background-color: var(--white) !important;
+    border-color: var(--border) !important;
+    color: var(--text-muted) !important;
+}
+.dark-mode .tab-btn:hover {
+    border-color: var(--blue) !important;
+    color: var(--blue) !important;
+}
+.dark-mode .tab-btn.active {
+    background: var(--gradient) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+    box-shadow: var(--shadow-glow) !important;
+}
+
+.dark-mode .modal-close {
+    background-color: var(--white) !important;
+    border-color: var(--border) !important;
+    color: var(--text-muted) !important;
+}
+.dark-mode .modal-close:hover {
+    background-color: var(--surface-alt) !important;
+    color: var(--blue) !important;
+}
+
+.dark-mode .section-white {
+    background-color: var(--surface) !important;
+}
+
+.dark-mode .nav {
+    background: rgba(11, 15, 25, 0.8) !important;
+    border-bottom: 1px solid rgba(31, 41, 55, 0.8) !important;
+}
+
+.dark-mode .logo {
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.dark-mode .dashboard-header {
+    background: #111827 !important;
+    border-bottom: 1px solid #1F2937 !important;
+}
+
+/* Inputs & Form Fields */
+.dark-mode input[type="text"], 
+.dark-mode input[type="email"], 
+.dark-mode input[type="password"],
+.dark-mode input[type="date"], 
+.dark-mode input[type="time"], 
+.dark-mode input[type="number"],
+.dark-mode input[type="file"], 
+.dark-mode select, 
+.dark-mode textarea {
+    background: #1F2937 !important;
+    border-color: #374151 !important;
+    color: #F9FAFB !important;
+}
+
+.dark-mode input::placeholder,
+.dark-mode textarea::placeholder {
+    color: #6B7280 !important;
+}
+
+.dark-mode input:focus, 
+.dark-mode select:focus, 
+.dark-mode textarea:focus {
+    border-color: var(--blue) !important;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, .3) !important;
+}
+
+/* Select option style */
+.dark-mode select option {
+    background-color: #111827 !important;
+    color: #F9FAFB !important;
+}
+
+/* Tables */
+.dark-mode table {
+    border-color: #374151 !important;
+}
+
+.dark-mode thead {
+    background: #1F2937 !important;
+}
+
+.dark-mode th {
+    color: #9CA3AF !important;
+}
+
+.dark-mode td {
+    border-top: 1px solid #1F2937 !important;
+    color: #E5E7EB !important;
+}
+
+.dark-mode tbody tr:hover {
+    background: #1F2937 !important;
+}
+
+/* Mobile Nav Drawer */
+.dark-mode .mobile-nav {
+    background: rgba(11, 15, 25, 0.98) !important;
+    border-color: #1F2937 !important;
+}
+
+.dark-mode .mobile-nav a:hover,
+.dark-mode .mobile-nav a.active {
+    background: #1F2937 !important;
+}
+
+/* Footer layout */
+.dark-mode .site-footer {
+    background-color: var(--white) !important;
+    border-top: 1px solid var(--border) !important;
+}
+
+/* Sidebar navigation links */
+.dark-mode .sidebar-nav a {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+.dark-mode .sidebar-nav a.active {
+    background: var(--gradient) !important;
+    color: #fff !important;
+}
+.dark-mode .sidebar-nav a:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #fff !important;
+}
+
+/* Buttons consistency in Dark Mode */
+.dark-mode .btn-secondary {
+    background: #1F2937 !important;
+    color: var(--blue) !important;
+    border: 2px solid var(--blue) !important;
+}
+.dark-mode .btn-secondary:hover {
+    background: var(--blue) !important;
+    color: #fff !important;
+}
+
+.dark-mode .btn-outline {
+    border-color: var(--border) !important;
+    color: var(--text-muted) !important;
+    background: transparent !important;
+}
+.dark-mode .btn-outline:hover {
+    border-color: var(--blue) !important;
+    color: var(--blue) !important;
+    background: var(--surface-alt) !important;
+}
+
+.dark-mode .btn-google {
+    background: #1F2937 !important;
+    border-color: #374151 !important;
+    color: #F9FAFB !important;
+}
+.dark-mode .btn-google:hover {
+    background: #374151 !important;
+}
+
+.dark-mode .btn-logout-danger {
+    background: rgba(220, 38, 38, 0.15) !important;
+    color: #F87171 !important;
+    border: 1px solid #EF4444 !important;
+}
+.dark-mode .btn-logout-danger:hover {
+    background: #DC2626 !important;
+    color: #ffffff !important;
+}
+
+/* Alerts */
+.dark-mode .alert-success { background: rgba(34, 197, 94, 0.1) !important; border-color: var(--green) !important; color: #34D399 !important; }
+.dark-mode .alert-danger  { background: rgba(239, 68, 68, 0.1) !important; border-color: #EF4444 !important; color: #F87171 !important; }
+.dark-mode .alert-warning { background: rgba(245, 158, 11, 0.1) !important; border-color: #F59E0B !important; color: #FBBF24 !important; }
+.dark-mode .alert-info    { background: rgba(14, 165, 233, 0.1) !important; border-color: var(--blue) !important; color: #38BDF8 !important; }
+
+/* Status Badges */
+.dark-mode .status-pending, 
+.dark-mode .status-menunggu     { background: rgba(245, 158, 11, 0.15) !important; color: #FBBF24 !important; }
+.dark-mode .status-confirmed, 
+.dark-mode .status-terverifikasi { background: rgba(34, 197, 94, 0.15) !important; color: #34D399 !important; }
+.dark-mode .status-cancelled, 
+.dark-mode .status-ditolak    { background: rgba(239, 68, 68, 0.15) !important; color: #F87171 !important; }
+
+/* Modal backdrop */
+.dark-mode .modal-backdrop {
+    background: rgba(0, 0, 0, .75) !important;
+}
+
+/* Scrollbars */
+.dark-mode ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+.dark-mode ::-webkit-scrollbar-track {
+    background: #0B0F19;
+}
+.dark-mode ::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: var(--radius-full);
+}
+.dark-mode ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
