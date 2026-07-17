@@ -13,6 +13,8 @@ if (isset($_SESSION['user_id'])) {
     }
 }
 require_once __DIR__ . '/config/koneksi.php';
+require_once __DIR__ . '/helpers/TokenHelper.php';
+require_once __DIR__ . '/helpers/MailHelper.php';
 /** @var mysqli $conn */
 
 $pageTitle = 'Daftar Akun';
@@ -46,16 +48,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (mysqli_stmt_num_rows($stmt) > 0) {
                 $errors[] = 'Email sudah terdaftar, gunakan email lain.';
             } else {
-                // DEVELOPMENT MODE ONLY
-                // Password hashing sementara dinonaktifkan untuk mempercepat proses testing.
-                // Aktifkan kembali password_hash() sebelum deployment ke production:
-                //   $hash = password_hash($pass, PASSWORD_DEFAULT);
-                $hash = $pass;
-                $stmt2 = mysqli_prepare($conn, "INSERT INTO users (nama_lengkap, email, password, nomor_telepon, role) VALUES (?, ?, ?, ?, 'customer')");
+                $hash = password_hash($pass, PASSWORD_DEFAULT);
+                $token = TokenHelper::generateToken();
+                $stmt2 = mysqli_prepare($conn, "INSERT INTO users (nama_lengkap, email, password, nomor_telepon, role, email_verified, verification_token) VALUES (?, ?, ?, ?, 'customer', 0, ?)");
                 if ($stmt2) {
-                    mysqli_stmt_bind_param($stmt2, 'ssss', $nama, $email, $hash, $telp);
+                    mysqli_stmt_bind_param($stmt2, 'sssss', $nama, $email, $hash, $telp, $token);
                     if (mysqli_stmt_execute($stmt2)) {
-                        $success = 'Registrasi berhasil! Silakan <a href="login.php">login</a>.';
+                        // Kirim email verifikasi
+                        $verification_link = $_ENV['APP_URL'] . "/verify-email.php?token=" . $token;
+                        $emailData = [
+                            'nama_lengkap' => $nama,
+                            'verification_link' => $verification_link
+                        ];
+                        $mailSent = MailHelper::send($email, 'Verifikasi Alamat Email Anda - PadelClub', 'verify-email', $emailData);
+                        
+                        if ($mailSent) {
+                            $success = 'Registrasi berhasil! Silakan periksa kotak masuk email Anda untuk melakukan verifikasi akun.';
+                        } else {
+                            $success = 'Registrasi berhasil! Namun, gagal mengirimkan email verifikasi. Silakan hubungi administrator.';
+                        }
                     } else {
                         $errors[] = 'Terjadi kesalahan. Coba lagi.';
                     }

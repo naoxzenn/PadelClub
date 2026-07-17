@@ -44,19 +44,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'batal
     } elseif (!in_array($rowCek['status'], $statusBolehBatal, true)) {
         $errors[] = 'Booking dengan status "' . htmlspecialchars($rowCek['status']) . '" tidak dapat dibatalkan.';
     } else {
-        // [NEW] Eksekusi pembatalan dengan prepared statement
-        $stmtBatal = mysqli_prepare($conn,
-            "UPDATE bookings SET status = 'cancelled' WHERE id = ? AND user_id = ?"
-        );
-        mysqli_stmt_bind_param($stmtBatal, 'ii', $booking_id, $_SESSION['user_id']);
-        if (mysqli_stmt_execute($stmtBatal) && mysqli_stmt_affected_rows($stmtBatal) > 0) {
-            mysqli_stmt_close($stmtBatal);
-            header('Location: dashboarduser.php?msg=cancelled');
-            exit;
-        } else {
-            mysqli_stmt_close($stmtBatal);
-            $errors[] = 'Pembatalan gagal. Silakan coba lagi atau hubungi admin.';
-        }
+        // Call centralized helper to update status and send cancellation email
+        updateBookingVerification($conn, $booking_id, 'cancelled');
+        header('Location: dashboarduser.php?msg=cancelled');
+        exit;
     }
 }
 

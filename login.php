@@ -13,6 +13,7 @@ if (isset($_SESSION['user_id'])) {
     }
 }
 require_once __DIR__ . '/config/koneksi.php';
+require_once __DIR__ . '/helpers/AuthHelper.php';
 /** @var mysqli $conn */
 
 $pageTitle = 'Masuk';
@@ -26,36 +27,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($email) || empty($pass)) {
         $error = 'Email dan password wajib diisi.';
     } else {
-        $stmt = mysqli_prepare($conn, "SELECT id, nama_lengkap, password, role FROM users WHERE email = ?");
+        $stmt = mysqli_prepare($conn, "SELECT id, nama_lengkap, password, role, email_verified FROM users WHERE email = ?");
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, 's', $email);
             mysqli_stmt_execute($stmt);
             $result = mysqli_stmt_get_result($stmt);
             $user = mysqli_fetch_assoc($result);
 
-            // DEVELOPMENT MODE ONLY
-            // Verifikasi password menggunakan perbandingan string biasa (plain text).
-            // Aktifkan kembali password_verify() sebelum deployment ke production:
-            //   if ($user && password_verify($pass, $user['password'])) {
-            if ($user && $pass === $user['password']) {
-                $_SESSION['user_id']   = $user['id'];
-                $_SESSION['nama']      = $user['nama_lengkap'];
-                $_SESSION['role']      = $user['role'];
-
-                $redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? '';
-                if (!empty($redirect) && (strpos($redirect, '/') === 0 || strpos($redirect, 'http') === 0 || strpos($redirect, 'checkin') === 0)) {
-                    header('Location: ' . $redirect);
+            if ($user && AuthHelper::verifyPassword($pass, $user['password'])) {
+                if ($user['role'] === 'customer' && !$user['email_verified']) {
+                    $error = 'Email Anda belum terverifikasi. Silakan periksa email Anda untuk verifikasi.';
                 } else {
-                    if ($user['role'] === 'admin') {
-                        header('Location: admin/dashboard.php');
-                    } elseif ($user['role'] === 'kasir') {
-                        header('Location: kasir/dashboard.php');
+                    // Session Fixation Protection
+                    session_regenerate_id(true);
+                    $_SESSION['user_id']   = $user['id'];
+                    $_SESSION['nama']      = $user['nama_lengkap'];
+                    $_SESSION['role']      = $user['role'];
+
+                    $redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? '';
+                    if (!empty($redirect) && (strpos($redirect, '/') === 0 || strpos($redirect, 'http') === 0 || strpos($redirect, 'checkin') === 0)) {
+                        header('Location: ' . $redirect);
                     } else {
-                        header('Location: dashboarduser.php');
+                        if ($user['role'] === 'admin') {
+                            header('Location: admin/dashboard.php');
+                        } elseif ($user['role'] === 'kasir') {
+                            header('Location: kasir/dashboard.php');
+                        } else {
+                            header('Location: dashboarduser.php');
+                        }
                     }
+                    mysqli_stmt_close($stmt);
+                    exit;
                 }
-                mysqli_stmt_close($stmt);
-                exit;
             } else {
                 $error = 'Email atau password salah.';
             }
@@ -118,6 +121,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="footer-link">
             Belum punya akun? <a href="register.php">Daftar di sini</a>
+        </div>
+
+        <div class="footer-link" style="margin-top: 5px;">
+            Lupa Password? <a href="forgot-password.php">Reset di sini</a>
         </div>
 
         <div class="footer-link" style="margin-top: 10px; font-size: 12px; color: #aaa;">

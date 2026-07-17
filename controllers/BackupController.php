@@ -103,6 +103,25 @@ class BackupController {
             if ($zipSuccess) {
                 $filesize = filesize($zipPath);
                 $this->model->logBackup($zipFilename, $filesize, $adminName, 'success', $ipAddress, $browser, 'Backup berhasil dibuat secara manual.');
+                
+                // Send email notification to all administrators
+                try {
+                    $stmtAdmin = $pdo->query("SELECT email FROM users WHERE role = 'admin'");
+                    $adminEmails = $stmtAdmin->fetchAll(PDO::FETCH_COLUMN);
+                    require_once __DIR__ . '/../helpers/MailHelper.php';
+                    $emailData = [
+                        'filename' => $zipFilename,
+                        'filesize' => BackupHelper::formatSize($filesize),
+                        'created_by' => $adminName,
+                        'created_at' => date('Y-m-d H:i:s')
+                    ];
+                    foreach ($adminEmails as $admEmail) {
+                        MailHelper::send($admEmail, 'Notifikasi: Backup Database Sukses - PadelClub', 'backup-success', $emailData);
+                    }
+                } catch (Exception $mailEx) {
+                    error_log("Failed to send backup email: " . $mailEx->getMessage());
+                }
+
                 return [
                     'status' => true, 
                     'message' => 'Backup database berhasil diselesaikan.',
@@ -218,6 +237,23 @@ class BackupController {
             $browser = BackupHelper::getBrowserName($userAgent);
             
             $this->model->logBackup($filename, filesize($zipPath), $adminName, 'success', $ipAddress, $browser, 'Database berhasil di-restore.');
+
+            // Send email notification to all administrators
+            try {
+                $stmtAdmin = $pdo->query("SELECT email FROM users WHERE role = 'admin'");
+                $adminEmails = $stmtAdmin->fetchAll(PDO::FETCH_COLUMN);
+                require_once __DIR__ . '/../helpers/MailHelper.php';
+                $emailData = [
+                    'filename' => $filename,
+                    'created_by' => $adminName,
+                    'created_at' => date('Y-m-d H:i:s')
+                ];
+                foreach ($adminEmails as $admEmail) {
+                    MailHelper::send($admEmail, 'Notifikasi: Pemulihan (Restore) Database Sukses - PadelClub', 'restore-success', $emailData);
+                }
+            } catch (Exception $mailEx) {
+                error_log("Failed to send restore email: " . $mailEx->getMessage());
+            }
 
             // Cleanup
             $this->cleanRestoreTemp($tempExtractPath);

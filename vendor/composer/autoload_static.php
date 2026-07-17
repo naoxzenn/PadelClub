@@ -123,6 +123,7 @@ class ComposerStaticInit62e10e6c8df9afc192311b196c75bb33
             'PhpOffice\\PhpWord\\' => 18,
             'PhpOffice\\PhpSpreadsheet\\' => 25,
             'PhpOffice\\Math\\' => 15,
+            'PHPMailer\\PHPMailer\\' => 20,
         ),
         'M' =>
         array (
@@ -227,6 +228,10 @@ class ComposerStaticInit62e10e6c8df9afc192311b196c75bb33
         'PhpOffice\\Math\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpoffice/math/src/Math',
+        ),
+        'PHPMailer\\PHPMailer\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/phpmailer/phpmailer/src',
         ),
         'Monolog\\' =>
         array (

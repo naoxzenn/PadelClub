@@ -54,6 +54,18 @@ if ($check_users) {
     if (!in_array('email_verified', $user_cols)) {
         mysqli_query($conn, "ALTER TABLE users ADD COLUMN email_verified TINYINT(1) DEFAULT 0 AFTER login_provider");
     }
+    if (!in_array('verification_token', $user_cols)) {
+        mysqli_query($conn, "ALTER TABLE users ADD COLUMN verification_token VARCHAR(255) NULL AFTER email_verified");
+    }
+    if (!in_array('verified_at', $user_cols)) {
+        mysqli_query($conn, "ALTER TABLE users ADD COLUMN verified_at DATETIME NULL AFTER verification_token");
+    }
+    if (!in_array('reset_token', $user_cols)) {
+        mysqli_query($conn, "ALTER TABLE users ADD COLUMN reset_token VARCHAR(255) NULL AFTER verified_at");
+    }
+    if (!in_array('reset_expired_at', $user_cols)) {
+        mysqli_query($conn, "ALTER TABLE users ADD COLUMN reset_expired_at DATETIME NULL AFTER reset_token");
+    }
 }
 
 // 1b. Add cancelled_at column to bookings table (for soft cancel feature)
@@ -176,7 +188,7 @@ if ($check_bookings) {
 
 // ---- HELPER SINKRONISASI PEMBAYARAN DAN STATUS BOOKING ----
 if (!function_exists('updateBookingVerification')) {
-    function updateBookingVerification($conn, $booking_id, $status, $verifier_id = null) {
+    function updateBookingVerification($conn, $booking_id, $status, $verifier_id = null, $sendEmail = true) {
         $status = strtolower($status);
         $booking_id = (int)$booking_id;
         
@@ -216,6 +228,41 @@ if (!function_exists('updateBookingVerification')) {
                 payment_status = 'Pending'
                 WHERE id = $booking_id");
         }
+
+        // Send email notification based on status
+        if ($sendEmail && ($status === 'confirmed' || $status === 'cancelled')) {
+            $resDetails = mysqli_query($conn, "
+                SELECT b.id, b.tanggal_booking, b.jam_mulai, b.jam_selesai, b.total_harga, b.booking_code,
+                       c.nama_lapangan, u.nama_lengkap, u.email
+                FROM bookings b
+                JOIN courts c ON b.court_id = c.id
+                JOIN users u ON b.user_id = u.id
+                WHERE b.id = $booking_id
+            ");
+            if ($resDetails) {
+                $details = mysqli_fetch_assoc($resDetails);
+                if ($details) {
+                    require_once __DIR__ . '/../helpers/MailHelper.php';
+                    $emailData = [
+                        'nama_lengkap' => $details['nama_lengkap'],
+                        'id' => $details['id'],
+                        'nama_lapangan' => $details['nama_lapangan'],
+                        'tanggal_booking' => $details['tanggal_booking'],
+                        'jam_mulai' => $details['jam_mulai'],
+                        'jam_selesai' => $details['jam_selesai'],
+                        'total_harga' => $details['total_harga'],
+                        'booking_code' => $details['booking_code'] ?? '',
+                        'reason' => $status === 'cancelled' ? 'Pembayaran ditolak atau booking dibatalkan oleh admin/petugas.' : ''
+                    ];
+
+                    if ($status === 'confirmed') {
+                        MailHelper::send($details['email'], 'Pembayaran Terverifikasi & Booking Confirmed - PadelClub', 'payment-verified', $emailData);
+                    } else {
+                        MailHelper::send($details['email'], 'Booking Lapangan Dibatalkan - PadelClub', 'payment-rejected', $emailData);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -223,7 +270,7 @@ if (!function_exists('updateBookingVerification')) {
 $fallback_res = mysqli_query($conn, "SELECT id FROM bookings WHERE status = 'confirmed' AND booking_code IS NULL");
 if ($fallback_res && mysqli_num_rows($fallback_res) > 0) {
     while ($row = mysqli_fetch_assoc($fallback_res)) {
-        updateBookingVerification($conn, $row['id'], 'confirmed');
+        updateBookingVerification($conn, $row['id'], 'confirmed', null, false);
     }
 }
 ?>

@@ -79,6 +79,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirmed']) && $_POS
 
         if (mysqli_stmt_execute($stmt2)) {
             $booking_id_created = mysqli_insert_id($conn);
+            
+            // Send booking-success email
+            $cust_res = mysqli_query($conn, "SELECT email, nama_lengkap FROM users WHERE id = $user_id");
+            $cust = mysqli_fetch_assoc($cust_res);
+            if ($cust) {
+                require_once __DIR__ . '/helpers/MailHelper.php';
+                $emailData = [
+                    'nama_lengkap' => $cust['nama_lengkap'],
+                    'id' => $booking_id_created,
+                    'nama_lapangan' => $court['nama_lapangan'],
+                    'tanggal_booking' => $draft['tanggal'],
+                    'jam_mulai' => $draft['jam_mulai'],
+                    'jam_selesai' => $draft['jam_selesai'],
+                    'total_harga' => $total
+                ];
+                MailHelper::send($cust['email'], 'Booking Lapangan Berhasil Dibuat - PadelClub', 'booking-success', $emailData);
+            }
+
             $_SESSION['booking_draft'] = null;
             unset($_SESSION['booking_draft']);
             // Return JSON for AJAX

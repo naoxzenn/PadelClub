@@ -23,13 +23,10 @@ $user_id = $_SESSION['user_id'];
 // Aksi batalkan
 if (isset($_GET['cancel_id'])) {
     $cid = (int)$_GET['cancel_id'];
-    $stmtC = mysqli_prepare($conn,
-        "UPDATE bookings SET status='cancelled' WHERE id=? AND user_id=? AND status='pending'"
-    );
-    if ($stmtC) {
-        mysqli_stmt_bind_param($stmtC, 'ii', $cid, $user_id);
-        mysqli_stmt_execute($stmtC);
-        mysqli_stmt_close($stmtC);
+    // Verify ownership and status before cancelling
+    $chk = mysqli_fetch_assoc(mysqli_query($conn, "SELECT id FROM bookings WHERE id=$cid AND user_id=$user_id AND status='pending'"));
+    if ($chk) {
+        updateBookingVerification($conn, $cid, 'cancelled');
     }
     header('Location: dashboarduser.php?msg=cancelled');
     exit;
