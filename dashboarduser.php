@@ -113,73 +113,75 @@ $total_pengeluaran = array_sum(array_column(
                     Belum ada booking. <a href="booking.php">Booking sekarang</a>!
                 </div>
             <?php else: ?>
+                <style>
+                .booking-row-link { cursor: pointer; transition: background 0.15s; }
+                .booking-row-link:hover { background: var(--surface-alt); }
+                .booking-row-link td { vertical-align: middle; }
+                </style>
                 <div class="table-responsive">
                     <table id="tabel-riwayat">
                         <thead>
                             <tr>
                                 <th>#</th>
                                 <th>Lapangan</th>
-                                <th>Tanggal</th>
-                                <th>Jam</th>
-                                <th>Paket</th>
+                                <th>Tanggal & Jam</th>
                                 <th>Total</th>
                                 <th>Status</th>
                                 <th>Pembayaran</th>
-                                <th>Kode &amp; QR</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($bookings as $i => $b): ?>
-                                <tr>
+                                <?php
+                                $detailUrl = (!empty($b['booking_code']))
+                                    ? 'booking-detail.php?code=' . urlencode($b['booking_code'])
+                                    : 'rincian_pembayaran.php?booking_id=' . $b['id'];
+                                $payStatus = $b['payment_status'] ?? 'Pending';
+                                $isVerified = ($payStatus === 'Verified' || $b['status_verifikasi'] === 'terverifikasi');
+                                $isRejected = ($payStatus === 'Rejected' || $b['status_verifikasi'] === 'ditolak');
+                                ?>
+                                <tr class="booking-row-link" onclick="window.location='<?= $detailUrl ?>'" title="Klik untuk melihat detail booking">
                                     <td><?= $i + 1 ?></td>
                                     <td>
                                         <strong><?= htmlspecialchars($b['nama_lapangan']) ?></strong><br>
                                         <small><?= $b['tipe_lapangan'] ?></small>
                                     </td>
-                                    <td><?= date('d/m/Y', strtotime($b['tanggal_booking'])) ?></td>
-                                    <td><?= substr($b['jam_mulai'],0,5) ?> – <?= substr($b['jam_selesai'],0,5) ?></td>
-                                    <td><?= $b['paket'] === 'per_jam' ? 'Per Jam' : 'Per Match' ?>
-                                        <?= $b['sewa_raket'] ? '<br><small>+Raket</small>' : '' ?></td>
+                                    <td>
+                                        <?= date('d/m/Y', strtotime($b['tanggal_booking'])) ?><br>
+                                        <small><?= substr($b['jam_mulai'],0,5) ?> – <?= substr($b['jam_selesai'],0,5) ?></small>
+                                    </td>
                                     <td>Rp <?= number_format($b['total_harga'], 0, ',', '.') ?></td>
                                     <td><span class="status-<?= $b['status'] ?>"><?= ucfirst($b['status']) ?></span></td>
                                     <td>
-                                         <?php if ($b['metode_bayar']): ?>
-                                             <?= htmlspecialchars($b['metode_bayar']) ?><br>
-                                             <small><?= ucfirst(htmlspecialchars($b['payment_status'] ?? '-')) ?></small>
-                                         <?php else: ?>
-                                             <span style="color:#aaa;">Belum bayar</span>
-                                         <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <?php if ($b['payment_status'] === 'Verified'): ?>
-                                            <code style="font-family: monospace; font-size: 0.9rem; font-weight: 700; color: var(--navy); display:block; margin-bottom:4px;"><?= htmlspecialchars($b['booking_code']) ?></code>
-                                            <a href="booking-detail.php?code=<?= $b['booking_code'] ?>">
-                                                <img src="<?= QRHelper::generateQRCodeDataUri(QRHelper::generateCheckinUrl($b['booking_code'])) ?>" alt="QR" style="width: 50px; height: 50px; background:#fff; padding:2px; border:1px solid var(--border); border-radius:4px; display:inline-block;">
-                                            </a>
+                                        <?php if ($b['metode_bayar']): ?>
+                                            <?php $mbg = $b['metode_bayar'] === 'QRIS' ? '#EEF6FF' : ($b['metode_bayar'] === 'Cash' ? '#F0FDF4' : '#EEF6FF'); ?>
+                                            <?php $mco = $b['metode_bayar'] === 'Cash' ? '#16A34A' : '#0EA5E9'; ?>
+                                            <span style="background:<?= $mbg ?>; color:<?= $mco ?>; font-weight:700; font-size:0.75rem; padding:2px 8px; border-radius:4px; display:inline-block; margin-bottom:4px;">
+                                                <?= htmlspecialchars($b['metode_bayar']) ?>
+                                            </span><br>
+                                        <?php endif; ?>
+                                        <?php if ($isVerified): ?>
+                                            <span class="status-confirmed" style="font-size:0.75rem; padding:2px 8px; border-radius:4px; font-weight:700; display:inline-block;">Lunas</span>
+                                        <?php elseif ($isRejected): ?>
+                                            <span class="status-cancelled" style="font-size:0.75rem; padding:2px 8px; border-radius:4px; font-weight:700; display:inline-block;">Gagal</span>
                                         <?php else: ?>
-                                            <span style="font-size: 0.8rem; color: var(--text-muted);">Menunggu verifikasi</span>
+                                            <span class="status-pending" style="font-size:0.75rem; padding:2px 8px; border-radius:4px; font-weight:700; display:inline-block;">Pending</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td>
-                                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                                            <?php if ($b['payment_status'] === 'Verified'): ?>
-                                                <a href="booking-detail.php?code=<?= $b['booking_code'] ?>" class="btn btn-sm btn-primary" style="display:inline-flex; align-items:center; gap:4px; justify-content:center;">
-                                                    <span class="material-symbols-outlined" style="font-size:0.95rem;">confirmation_number</span> Tiket
-                                                </a>
+                                    <td onclick="event.stopPropagation()">
+                                        <div style="display:flex; flex-direction:column; gap:4px;">
+                                            <a href="<?= $detailUrl ?>" class="btn btn-sm btn-primary" style="display:inline-flex; align-items:center; gap:4px; justify-content:center;">
+                                                <span class="material-symbols-outlined" style="font-size:0.95rem;">open_in_new</span>
+                                                <?= $isVerified ? 'Tiket & QR' : 'Detail' ?>
+                                            </a>
+                                            <?php if ($isVerified && !empty($b['booking_code'])): ?>
                                                 <a href="invoice.php?code=<?= $b['booking_code'] ?>" class="btn btn-sm btn-outline" style="display:inline-flex; align-items:center; gap:4px; justify-content:center;">
                                                     <span class="material-symbols-outlined" style="font-size:0.95rem;">receipt_long</span> Invoice
                                                 </a>
-                                                <a href="download_qr.php?code=<?= $b['booking_code'] ?>" class="btn btn-sm btn-outline" style="display:inline-flex; align-items:center; gap:4px; justify-content:center;">
-                                                    <span class="material-symbols-outlined" style="font-size:0.95rem;">download</span> QR Code
-                                                </a>
-                                            <?php else: ?>
-                                                <a href="rincian_pembayaran.php?booking_id=<?= $b['id'] ?>" class="btn btn-sm btn-primary" style="display:inline-flex; align-items:center; gap:4px; justify-content:center;">
-                                                    <span class="material-symbols-outlined" style="font-size:0.95rem;">payments</span> Detail Bayar
-                                                </a>
                                             <?php endif; ?>
                                             <?php if ($b['status'] === 'pending'): ?>
-                                                <a href="dashboarduser.php?cancel_id=<?= $b['id'] ?>" class="btn btn-sm btn-danger" style="display:inline-flex; align-items:center; gap:4px; justify-content:center;" onclick="return confirm('Apakah Anda yakin ingin membatalkan booking ini?');">
+                                                <a href="dashboarduser.php?cancel_id=<?= $b['id'] ?>" class="btn btn-sm btn-danger" style="display:inline-flex; align-items:center; gap:4px; justify-content:center;" onclick="event.stopPropagation(); return confirm('Batalkan booking ini?');">
                                                     <span class="material-symbols-outlined" style="font-size:0.95rem;">cancel</span> Batal
                                                 </a>
                                             <?php endif; ?>
@@ -193,7 +195,9 @@ $total_pengeluaran = array_sum(array_column(
             <?php endif; ?>
         </div>
 
+
         <!-- Info Akun -->
+
         <div class="card">
             <h2>Informasi Akun</h2>
             <div class="detail-box">
@@ -218,5 +222,17 @@ $total_pengeluaran = array_sum(array_column(
 
     </div>
 </section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('scroll') === 'riwayat') {
+        const target = document.getElementById('tabel-riwayat');
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+});
+</script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

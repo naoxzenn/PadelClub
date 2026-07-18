@@ -72,7 +72,7 @@ $queries = [
         booking_id INT NOT NULL,
         waktu_bayar DATETIME DEFAULT CURRENT_TIMESTAMP,
         jumlah_bayar DECIMAL(10,2) NOT NULL,
-        metode_bayar ENUM('Transfer','Cash') NOT NULL,
+        metode_bayar ENUM('QRIS','Cash') NOT NULL,
         bukti_transfer VARCHAR(255),
         status_verifikasi ENUM('menunggu','terverifikasi','ditolak') DEFAULT 'menunggu',
         FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE

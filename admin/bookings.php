@@ -240,6 +240,7 @@ function sortIcon($col) {
                             <th>Waktu</th>
                             <th><a href="<?= getSortUrl('total_harga') ?>" style="color:inherit; text-decoration:none;">Total <?= sortIcon('total_harga') ?></a></th>
                             <th><a href="<?= getSortUrl('status') ?>" style="color:inherit; text-decoration:none;">Status <?= sortIcon('status') ?></a></th>
+                            <th>Check-in</th>
                             <th>Ubah Status</th>
                         </tr>
                     </thead>
@@ -270,6 +271,22 @@ function sortIcon($col) {
                                     <?php endif; ?>
                                 </td>
                                 <td>
+                                    <?php if ($b['checkin_status'] === 'Checked In'): ?>
+                                        <span style="display:inline-flex; align-items:center; gap:4px; background:rgba(34,197,94,0.1); color:var(--green-dark); padding:3px 10px; border-radius:6px; font-size:0.78rem; font-weight:700;">
+                                            <span class="material-symbols-outlined" style="font-size:0.9rem;">how_to_reg</span> Hadir
+                                        </span>
+                                        <?php if (!empty($b['checkin_time'])): ?>
+                                            <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;"><?= date('H:i', strtotime($b['checkin_time'])) ?> WIB</div>
+                                        <?php endif; ?>
+                                    <?php elseif ($b['status'] === 'confirmed' && $b['payment_status'] === 'Verified'): ?>
+                                        <span style="display:inline-flex; align-items:center; gap:4px; background:rgba(245,158,11,0.1); color:#D97706; padding:3px 10px; border-radius:6px; font-size:0.78rem; font-weight:700;">
+                                            <span class="material-symbols-outlined" style="font-size:0.9rem;">schedule</span> Belum
+                                        </span>
+                                    <?php else: ?>
+                                        <span style="color:var(--text-muted); font-size:0.78rem;">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
                                     <form method="POST" style="display:flex; gap:4px; align-items:center; margin:0;">
                                         <input type="hidden" name="action" value="update_status">
                                         <input type="hidden" name="booking_id" value="<?= $b['id'] ?>">
@@ -284,7 +301,7 @@ function sortIcon($col) {
                             </tr>
                         <?php endforeach; ?>
                         <?php if (empty($bookings)): ?>
-                            <tr><td colspan="8" style="text-align:center; color:#aaa; padding:24px;">Tidak ada data booking yang cocok.</td></tr>
+                            <tr><td colspan="9" style="text-align:center; color:#aaa; padding:24px;">Tidak ada data booking yang cocok.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>

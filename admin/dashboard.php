@@ -33,12 +33,12 @@ $totalLapangan = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM
 
 // Pendapatan Hari Ini
 $pendapatanHariIni = (float)mysqli_fetch_row(mysqli_query($conn, 
-    "SELECT COALESCE(SUM(jumlah_bayar), 0) FROM payments WHERE status_verifikasi = 'terverifikasi' AND DATE(waktu_bayar) = CURDATE()"
+    "SELECT COALESCE(SUM(jumlah_bayar), 0) FROM payments WHERE status_verifikasi = 'terverifikasi' AND DATE(COALESCE(waktu_bayar, payment_date)) = CURDATE()"
 ))[0];
 
 // Pendapatan Bulan Ini
 $pendapatanBulanIni = (float)mysqli_fetch_row(mysqli_query($conn, 
-    "SELECT COALESCE(SUM(jumlah_bayar), 0) FROM payments WHERE status_verifikasi = 'terverifikasi' AND MONTH(waktu_bayar) = MONTH(CURDATE()) AND YEAR(waktu_bayar) = YEAR(CURDATE())"
+    "SELECT COALESCE(SUM(jumlah_bayar), 0) FROM payments WHERE status_verifikasi = 'terverifikasi' AND MONTH(COALESCE(waktu_bayar, payment_date)) = MONTH(CURDATE()) AND YEAR(COALESCE(waktu_bayar, payment_date)) = YEAR(CURDATE())"
 ))[0];
 
 // Booking Pending
@@ -49,6 +49,13 @@ $bookingConfirmed = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) F
 
 // Booking Cancelled
 $bookingCancelled = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE status = 'cancelled'"))[0];
+
+// ---- CHECK-IN STATS HARI INI ----
+$todayDate = date('Y-m-d');
+$checkinTotal   = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE status = 'confirmed' AND tanggal_booking = '$todayDate'"))[0];
+$checkinHadir   = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE status = 'confirmed' AND tanggal_booking = '$todayDate' AND checkin_status = 'Checked In'"))[0];
+$checkinBelum   = $checkinTotal - $checkinHadir;
+$checkinRate    = $checkinTotal > 0 ? round(($checkinHadir / $checkinTotal) * 100) : 0;
 
 
 // ---- AMBIL DATA RINGKASAN ----
@@ -70,7 +77,7 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
     JOIN users u ON b.user_id = u.id
     JOIN courts c ON b.court_id = c.id
     WHERE p.status_verifikasi = 'menunggu'
-    ORDER BY p.waktu_bayar DESC
+    ORDER BY COALESCE(p.waktu_bayar, p.payment_date) DESC
     LIMIT 5
 "), MYSQLI_ASSOC);
 ?>
@@ -193,6 +200,57 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
                 <div class="stat-card-info">
                     <span class="stat-card-value"><?= $bookingCancelled ?></span>
                     <span class="stat-card-label">Booking Cancelled</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Check-in Stats Hari Ini -->
+        <div style="margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <h3 style="font-size: 1rem; font-weight: 800; color: var(--navy); display:flex; align-items:center; gap:8px;">
+                    <span class="material-symbols-outlined" style="color: var(--blue); font-size: 1.2rem;">qr_code_scanner</span>
+                    Status Kehadiran Hari Ini
+                </h3>
+                <a href="checkin_list.php" style="font-size: 0.82rem; font-weight: 700; color: var(--blue); display: inline-flex; align-items: center; gap: 4px;">
+                    Lihat Semua <span class="material-symbols-outlined" style="font-size:1rem;">arrow_forward</span>
+                </a>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                <div class="dashboard-stat-card" style="border-left: 3px solid var(--blue);">
+                    <div class="stat-card-icon" style="background: rgba(14,165,233,0.08); color: var(--blue);">
+                        <span class="material-symbols-outlined">today</span>
+                    </div>
+                    <div class="stat-card-info">
+                        <span class="stat-card-value"><?= $checkinTotal ?></span>
+                        <span class="stat-card-label">Booking Hari Ini</span>
+                    </div>
+                </div>
+                <div class="dashboard-stat-card" style="border-left: 3px solid var(--green);">
+                    <div class="stat-card-icon" style="background: rgba(34,197,94,0.08); color: var(--green);">
+                        <span class="material-symbols-outlined">how_to_reg</span>
+                    </div>
+                    <div class="stat-card-info">
+                        <span class="stat-card-value" style="color: var(--green);"><?= $checkinHadir ?></span>
+                        <span class="stat-card-label">Sudah Hadir</span>
+                    </div>
+                </div>
+                <div class="dashboard-stat-card" style="border-left: 3px solid #F59E0B;">
+                    <div class="stat-card-icon" style="background: rgba(245,158,11,0.08); color: #F59E0B;">
+                        <span class="material-symbols-outlined">pending_actions</span>
+                    </div>
+                    <div class="stat-card-info">
+                        <span class="stat-card-value" style="color: #D97706;"><?= $checkinBelum ?></span>
+                        <span class="stat-card-label">Belum Hadir</span>
+                    </div>
+                </div>
+                <div class="dashboard-stat-card" style="border-left: 3px solid var(--blue-dark);">
+                    <div class="stat-card-icon" style="background: rgba(14,165,233,0.08); color: var(--blue-dark);">
+                        <span class="material-symbols-outlined">percent</span>
+                    </div>
+                    <div class="stat-card-info">
+                        <span class="stat-card-value"><?= $checkinRate ?>%</span>
+                        <span class="stat-card-label">Tingkat Kehadiran</span>
+                    </div>
                 </div>
             </div>
         </div>

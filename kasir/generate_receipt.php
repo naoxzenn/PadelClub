@@ -11,7 +11,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
-$booking_id = (int)($_GET['booking_id'] ?? 0);
+$booking_id = (int) ($_GET['booking_id'] ?? 0);
 if (!$booking_id) {
     die("Booking ID tidak valid.");
 }
@@ -50,39 +50,163 @@ ob_start();
 ?>
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <title>Struk Pembayaran PadelClub #<?= htmlspecialchars($data['receipt_number']) ?></title>
     <style>
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; font-size: 13px; margin: 0; padding: 0; }
-        .receipt-card { max-width: 450px; margin: 0 auto; border: 1px solid #ddd; padding: 25px; border-radius: 8px; }
-        .header { text-align: center; border-bottom: 2px dashed #ddd; padding-bottom: 15px; margin-bottom: 20px; }
-        .header h1 { font-size: 22px; margin: 0; color: #1e293b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-        .header p { margin: 5px 0 0; color: #64748b; font-size: 11px; }
-        .title { text-align: center; margin-bottom: 20px; }
-        .title h2 { font-size: 14px; margin: 0; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; }
-        .info-table { width: 100%; margin-bottom: 20px; font-size: 12px; border-collapse: collapse; }
-        .info-table td { padding: 4px 0; vertical-align: top; }
-        .info-table td.label { color: #64748b; width: 35%; }
-        .info-table td.value { color: #1e293b; font-weight: bold; }
-        .divider { border-top: 1px solid #e2e8f0; margin: 15px 0; }
-        .booking-details { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
-        .booking-details th { text-align: left; padding: 8px; background-color: #f8fafc; color: #64748b; border-bottom: 1px solid #e2e8f0; }
-        .booking-details td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; }
-        .summary-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .summary-table td { padding: 6px 8px; font-size: 12px; }
-        .summary-table td.total-label { text-align: right; width: 60%; font-weight: bold; color: #1e293b; }
-        .summary-table td.total-value { text-align: right; font-weight: 800; font-size: 15px; color: #10b981; }
-        .status-stamp { display: inline-block; padding: 4px 12px; border: 2px solid #10b981; color: #10b981; font-weight: bold; text-transform: uppercase; border-radius: 4px; font-size: 12px; margin-top: 15px; letter-spacing: 1px; }
-        .footer { text-align: center; border-top: 2px dashed #ddd; padding-top: 15px; margin-top: 25px; color: #64748b; font-size: 11px; }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #333;
+            font-size: 13px;
+            margin: 0;
+            padding: 0;
+        }
+
+        .receipt-card {
+            max-width: 450px;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            padding: 25px;
+            border-radius: 8px;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px dashed #ddd;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            margin: 0;
+            color: #1e293b;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .header p {
+            margin: 5px 0 0;
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        .title {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .title h2 {
+            font-size: 14px;
+            margin: 0;
+            color: #3b82f6;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-table {
+            width: 100%;
+            margin-bottom: 20px;
+            font-size: 12px;
+            border-collapse: collapse;
+        }
+
+        .info-table td {
+            padding: 4px 0;
+            vertical-align: top;
+        }
+
+        .info-table td.label {
+            color: #64748b;
+            width: 35%;
+        }
+
+        .info-table td.value {
+            color: #1e293b;
+            font-weight: bold;
+        }
+
+        .divider {
+            border-top: 1px solid #e2e8f0;
+            margin: 15px 0;
+        }
+
+        .booking-details {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 12px;
+        }
+
+        .booking-details th {
+            text-align: left;
+            padding: 8px;
+            background-color: #f8fafc;
+            color: #64748b;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .booking-details td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .summary-table td {
+            padding: 6px 8px;
+            font-size: 12px;
+        }
+
+        .summary-table td.total-label {
+            text-align: right;
+            width: 60%;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .summary-table td.total-value {
+            text-align: right;
+            font-weight: 800;
+            font-size: 15px;
+            color: #10b981;
+        }
+
+        .status-stamp {
+            display: inline-block;
+            padding: 4px 12px;
+            border: 2px solid #10b981;
+            color: #10b981;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 15px;
+            letter-spacing: 1px;
+        }
+
+        .footer {
+            text-align: center;
+            border-top: 2px dashed #ddd;
+            padding-top: 15px;
+            margin-top: 25px;
+            color: #64748b;
+            font-size: 11px;
+        }
     </style>
 </head>
+
 <body>
     <div class="receipt-card">
         <div class="header">
             <h1>PadelClub</h1>
-            <p>Universitas Muhammadiyah PKU Surakarta</p>
-            <p>Telp: +62 812-3456-7890 | email: info@padelclub.com</p>
+            <p>Telp: +62 822-3300-9810 | email: padelclub4@gmail.com</p>
         </div>
 
         <div class="title">
@@ -104,7 +228,8 @@ ob_start();
             </tr>
             <tr>
                 <td class="label">Nama Customer</td>
-                <td class="value"><?= htmlspecialchars($data['nama_lengkap']) ?> (<?= htmlspecialchars($data['nomor_telepon'] ?? '-') ?>)</td>
+                <td class="value"><?= htmlspecialchars($data['nama_lengkap']) ?>
+                    (<?= htmlspecialchars($data['nomor_telepon'] ?? '-') ?>)</td>
             </tr>
         </table>
 
@@ -122,8 +247,11 @@ ob_start();
             <tbody>
                 <tr>
                     <td>
-                        <strong><?= htmlspecialchars($data['nama_lapangan']) ?></strong> (<?= htmlspecialchars($data['tipe_lapangan']) ?>)<br>
-                        <span style="font-size: 10px; color: #64748b;"><?= date('d/m/Y', strtotime($data['tanggal_booking'])) ?> | <?= substr($data['jam_mulai'],0,5) ?> - <?= substr($data['jam_selesai'],0,5) ?></span>
+                        <strong><?= htmlspecialchars($data['nama_lapangan']) ?></strong>
+                        (<?= htmlspecialchars($data['tipe_lapangan']) ?>)<br>
+                        <span
+                            style="font-size: 10px; color: #64748b;"><?= date('d/m/Y', strtotime($data['tanggal_booking'])) ?>
+                            | <?= substr($data['jam_mulai'], 0, 5) ?> - <?= substr($data['jam_selesai'], 0, 5) ?></span>
                     </td>
                     <?php
                     $mulai = new DateTime($data['jam_mulai']);
@@ -131,7 +259,8 @@ ob_start();
                     $diff = $mulai->diff($selesai);
                     $durasi = $diff->h + ($diff->i / 60);
                     ?>
-                    <td style="text-align: right; white-space: nowrap;"><?= $durasi ?> jam x Rp <?= number_format($data['harga_per_jam'], 0, ',', '.') ?></td>
+                    <td style="text-align: right; white-space: nowrap;"><?= $durasi ?> jam x Rp
+                        <?= number_format($data['harga_per_jam'], 0, ',', '.') ?></td>
                     <td style="text-align: right;">Rp <?= number_format($data['total_harga'], 0, ',', '.') ?></td>
                 </tr>
             </tbody>
@@ -140,7 +269,8 @@ ob_start();
         <table class="summary-table">
             <tr>
                 <td class="total-label">Subtotal</td>
-                <td style="text-align: right; color: #1e293b;">Rp <?= number_format($data['total_harga'], 0, ',', '.') ?></td>
+                <td style="text-align: right; color: #1e293b;">Rp
+                    <?= number_format($data['total_harga'], 0, ',', '.') ?></td>
             </tr>
             <tr>
                 <td class="total-label">Total Bayar (CASH)</td>
@@ -155,10 +285,12 @@ ob_start();
         <div class="footer">
             <p>Terima kasih atas pembayaran Anda!</p>
             <p style="font-weight: bold; color: #3b82f6;">Selamat Bermain di PadelClub!</p>
-            <p style="font-size: 9px; margin-top: 10px; color: #cbd5e1;">Struk ini diterbitkan secara elektronik dan sah sebagai bukti pembayaran.</p>
+            <p style="font-size: 9px; margin-top: 10px; color: #cbd5e1;">Struk ini diterbitkan secara elektronik dan sah
+                sebagai bukti pembayaran.</p>
         </div>
     </div>
 </body>
+
 </html>
 <?php
 $html = ob_get_clean();

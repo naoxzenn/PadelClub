@@ -137,6 +137,7 @@ $res_pay_stats = mysqli_query($conn, "
     GROUP BY metode_bayar
 ");
 $pay_stats = [
+    'QRIS' => ['count' => 0, 'total' => 0],
     'Transfer' => ['count' => 0, 'total' => 0],
     'Cash' => ['count' => 0, 'total' => 0]
 ];
@@ -239,8 +240,8 @@ while ($row = mysqli_fetch_assoc($res_pay_stats)) {
                 <!-- Transaction Split List -->
                 <div style="border-top:1px solid var(--border); padding-top:16px;">
                     <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:8px;">
-                        <span style="color:var(--text-muted);">Transfer Bank:</span>
-                        <strong style="color:var(--navy);"><?= $pay_stats['Transfer']['count'] ?> Transaksi (Rp <?= number_format($pay_stats['Transfer']['total'], 0, ',', '.') ?>)</strong>
+                        <span style="color:var(--text-muted);">QRIS / Transfer Bank:</span>
+                        <strong style="color:var(--navy);"><?= ($pay_stats['QRIS']['count'] ?? 0) + ($pay_stats['Transfer']['count'] ?? 0) ?> Transaksi (Rp <?= number_format(($pay_stats['QRIS']['total'] ?? 0) + ($pay_stats['Transfer']['total'] ?? 0), 0, ',', '.') ?>)</strong>
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
                         <span style="color:var(--text-muted);">Cash / Tunai:</span>

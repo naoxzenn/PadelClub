@@ -18,7 +18,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     if ($action === 'confirm_booking') {
         $bid = (int)$_POST['booking_id'];
-        // Guard: cek apakah booking sudah dibatalkan
         $chk = mysqli_fetch_assoc(mysqli_query($conn, "SELECT status FROM bookings WHERE id=$bid"));
         if ($chk && $chk['status'] === 'cancelled') {
             $msg = 'Gagal: Booking #' . $bid . ' telah dibatalkan oleh pelanggan.';
@@ -29,86 +28,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
     } elseif ($action === 'cancel_booking') {
         $bid = (int)$_POST['booking_id'];
-        $s = mysqli_prepare($conn, "UPDATE bookings SET status='cancelled' WHERE id=?");
-        if ($s) {
-            mysqli_stmt_bind_param($s, 'i', $bid);
-            if (mysqli_stmt_execute($s)) {
-                // Cancel payment too if exists
-                mysqli_query($conn, "UPDATE payments SET status_verifikasi='ditolak', payment_status='unpaid' WHERE booking_id=$bid");
-                $msg = 'Booking #' . $bid . ' berhasil dibatalkan.';
-            } else {
-                $msg = 'Gagal membatalkan booking.';
-                $msg_type = 'error';
-            }
-            mysqli_stmt_close($s);
+        if (updateBookingVerification($conn, $bid, 'cancelled', $_SESSION['user_id'], true)) {
+            $msg = 'Booking #' . $bid . ' berhasil dibatalkan.';
         } else {
-            die("Query error: " . mysqli_error($conn));
+            $msg = 'Gagal membatalkan booking.';
+            $msg_type = 'error';
         }
     } elseif ($action === 'pay_cash') {
         $bid = (int)$_POST['booking_id'];
-        
-        // Ambil data booking untuk hitung total harga + cek status
-        $res = mysqli_query($conn, "SELECT total_harga, status FROM bookings WHERE id=$bid");
+        $res = mysqli_query($conn, "SELECT status FROM bookings WHERE id=$bid");
         $booking = mysqli_fetch_assoc($res);
         
         if ($booking) {
-            // Guard: cek apakah booking sudah dibatalkan
             if ($booking['status'] === 'cancelled') {
                 $msg = 'Gagal: Booking #' . $bid . ' telah dibatalkan oleh pelanggan. Pembayaran tidak dapat diproses.';
                 $msg_type = 'error';
             } else {
-            $jumlah = (float)$booking['total_harga'];
-            $cashier_id = $_SESSION['user_id'];
-            $payment_date = date('Y-m-d H:i:s');
-            $receipt_number = 'REC-' . date('Ymd') . '-' . sprintf('%04d', $bid);
-
-            // Cek apakah data pembayaran sudah ada
-            $check = mysqli_query($conn, "SELECT id FROM payments WHERE booking_id=$bid");
-            $payment_row = mysqli_fetch_assoc($check);
-            
-            if ($payment_row) {
-                // Update
-                $stmt = mysqli_prepare($conn,
-                    "UPDATE payments SET 
-                        jumlah_bayar = ?, 
-                        metode_bayar = 'Cash', 
-                        status_verifikasi = 'terverifikasi', 
-                        payment_status = 'paid', 
-                        payment_date = ?, 
-                        cashier_id = ?, 
-                        receipt_number = ? 
-                     WHERE booking_id = ?"
-                );
-            } else {
-                // Insert
-                $stmt = mysqli_prepare($conn,
-                    "INSERT INTO payments (booking_id, jumlah_bayar, metode_bayar, status_verifikasi, payment_status, payment_date, cashier_id, receipt_number) 
-                     VALUES (?, ?, 'Cash', 'terverifikasi', 'paid', ?, ?, ?)"
-                );
-            }
-            
-            if ($stmt) {
-                if ($payment_row) {
-                    mysqli_stmt_bind_param($stmt, 'dsisi', $jumlah, $payment_date, $cashier_id, $receipt_number, $bid);
-                } else {
-                    mysqli_stmt_bind_param($stmt, 'idsis', $bid, $jumlah, $payment_date, $cashier_id, $receipt_number);
-                }
-                
-                if (mysqli_stmt_execute($stmt)) {
-                    // Update booking status to confirmed
-                    updateBookingVerification($conn, $bid, 'confirmed', $_SESSION['user_id']);
+                if (updateBookingVerification($conn, $bid, 'confirmed', $_SESSION['user_id'], true, 'Cash', $_SESSION['user_id'])) {
+                    $rec_res = mysqli_query($conn, "SELECT receipt_number FROM payments WHERE booking_id = $bid");
+                    $rec_row = $rec_res ? mysqli_fetch_assoc($rec_res) : null;
+                    $receipt_number = $rec_row['receipt_number'] ?? ('REC-' . date('Ymd') . '-' . sprintf('%04d', $bid));
                     $msg = 'Pembayaran Cash Berhasil! Struk pembayaran telah dibuat dengan nomor ' . $receipt_number . '.';
-                    
-                    // Tambahkan tanda bahwa struk siap dicetak
-                    mysqli_query($conn, "UPDATE payments SET receipt_printed=0 WHERE booking_id=$bid");
                 } else {
                     $msg = 'Gagal memproses pembayaran cash.';
                     $msg_type = 'error';
                 }
-                mysqli_stmt_close($stmt);
-            } else {
-                die("Query error: " . mysqli_error($conn));
-            }
             }
         } else {
             $msg = 'Booking tidak ditemukan.';
@@ -119,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
 // ---- AMBIL DATA STATISTIK ----
 // 1. Total Cash Income Today
-$resIncome = mysqli_query($conn, "SELECT SUM(jumlah_bayar) FROM payments WHERE metode_bayar = 'Cash' AND status_verifikasi = 'terverifikasi' AND DATE(payment_date) = CURDATE()");
+$resIncome = mysqli_query($conn, "SELECT SUM(jumlah_bayar) FROM payments WHERE metode_bayar = 'Cash' AND status_verifikasi = 'terverifikasi' AND DATE(COALESCE(payment_date, waktu_bayar)) = CURDATE()");
 $incomeToday = (float)(mysqli_fetch_row($resIncome)[0] ?? 0);
 
 // 2. Pending Confirmations
@@ -156,14 +100,24 @@ $unpaidBookings = mysqli_fetch_all(mysqli_query($conn,
 $receipts = mysqli_fetch_all(mysqli_query($conn,
     "SELECT b.id AS booking_id, b.tanggal_booking, b.jam_mulai, b.jam_selesai,
             c.nama_lapangan, u.nama_lengkap,
-            p.receipt_number, p.jumlah_bayar, p.payment_date, p.receipt_printed
+            p.receipt_number, p.jumlah_bayar, COALESCE(p.payment_date, p.waktu_bayar) AS payment_date, p.receipt_printed
      FROM payments p
      JOIN bookings b ON p.booking_id = b.id
      JOIN courts c ON b.court_id = c.id
      JOIN users u ON b.user_id = u.id
-     WHERE p.payment_status = 'paid'
-     ORDER BY p.payment_date DESC"
+     WHERE p.payment_status = 'paid' OR p.status_verifikasi = 'terverifikasi'
+     ORDER BY COALESCE(p.payment_date, p.waktu_bayar) DESC"
 ), MYSQLI_ASSOC);
+
+// ---- AMBIL DATA PEMBAYARAN QRIS (PAYMENT TAB - QRIS TABLE) ----
+$qrisPayments = mysqli_fetch_all(mysqli_query($conn, "
+    SELECT p.booking_id, u.nama_lengkap, u.email, p.metode_bayar, p.jumlah_bayar, p.status_verifikasi
+    FROM payments p
+    JOIN bookings b ON p.booking_id = b.id
+    JOIN users u ON b.user_id = u.id
+    WHERE p.metode_bayar = 'QRIS'
+    ORDER BY COALESCE(p.payment_date, p.waktu_bayar) DESC
+"), MYSQLI_ASSOC);
 ?>
 <?php include __DIR__ . '/../includes/header.php'; ?>
 
@@ -368,6 +322,49 @@ $receipts = mysqli_fetch_all(mysqli_query($conn,
                             <?php endforeach; ?>
                             <?php if (empty($unpaidBookings)): ?>
                                 <tr><td colspan="8" style="text-align:center; color:#aaa; padding:16px;">Tidak ada booking yang membutuhkan pembayaran tunai saat ini.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 24px;">
+                <h2>Riwayat Pembayaran QRIS</h2>
+                <p style="color: var(--text-muted); margin-bottom: 20px;">Daftar transaksi pembayaran simulasi menggunakan QRIS Dummy beserta statusnya (tanpa upload bukti transfer).</p>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Booking ID</th>
+                                <th>Customer</th>
+                                <th>Metode</th>
+                                <th>Nominal</th>
+                                <th>Status Pembayaran</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($qrisPayments as $qp): ?>
+                                <tr>
+                                    <td>#<?= $qp['booking_id'] ?></td>
+                                    <td>
+                                        <strong><?= htmlspecialchars($qp['nama_lengkap']) ?></strong><br>
+                                        <small><?= htmlspecialchars($qp['email']) ?></small>
+                                    </td>
+                                    <td><span class="badge" style="background:#EEF6FF; color:#0EA5E9; font-weight:700; font-size:0.75rem; padding:2px 8px; border-radius:4px; display:inline-block;">QRIS</span></td>
+                                    <td><strong>Rp <?= number_format($qp['jumlah_bayar'], 0, ',', '.') ?></strong></td>
+                                    <td>
+                                        <?php if ($qp['status_verifikasi'] === 'terverifikasi'): ?>
+                                            <span class="status-confirmed">Lunas</span>
+                                        <?php elseif ($qp['status_verifikasi'] === 'ditolak'): ?>
+                                            <span class="status-cancelled">Gagal</span>
+                                        <?php else: ?>
+                                            <span class="status-pending">Pending</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                            <?php if (empty($qrisPayments)): ?>
+                                <tr><td colspan="5" style="text-align:center; color:#aaa; padding:16px;">Belum ada transaksi pembayaran QRIS saat ini.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

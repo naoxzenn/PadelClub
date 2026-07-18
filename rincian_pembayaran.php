@@ -81,17 +81,42 @@ mysqli_stmt_bind_param($stmtP, 'i', $booking_id);
 mysqli_stmt_execute($stmtP);
 $payment = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtP));
 
+// Handle AJAX POST for QRIS Demo Payment
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'demo_payment') {
+    header('Content-Type: application/json');
+    $status = $_POST['status'] ?? '';
+
+    if ($status === 'bayar') {
+        // Demo Bayar: Lunas
+        if (updateBookingVerification($conn, $booking_id, 'confirmed', null, true, 'QRIS')) {
+            echo json_encode(['success' => true]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Gagal menyimpan simulasi pembayaran.']);
+        }
+    } elseif ($status === 'tidak_bayar') {
+        // Demo Tidak Bayar: Gagal
+        if (updateBookingVerification($conn, $booking_id, 'rejected_pending', null, true, 'QRIS')) {
+            echo json_encode(['success' => true]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Gagal menyimpan simulasi pembatalan.']);
+        }
+    } else {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Aksi tidak valid.']);
+    }
+    exit;
+}
+
 // Handle AJAX POST from payment confirmation modal
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!$payment || $payment['status_verifikasi'] === 'ditolak')
     && ($_POST['action'] ?? '') !== 'batalkan'
     && !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
     && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest'
 ) {
     header('Content-Type: application/json');
-
-    $metode = $_POST['metode_bayar'] ?? '';
-    $jumlah = (float)($booking['total_harga']);
-    $bukti  = '';
+    $metode = $_POST['metode_bayar'] ?? 'Cash';
 
     if (empty($metode)) {
         http_response_code(422);
@@ -99,44 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment
         exit;
     }
 
-    if ($metode === 'Transfer') {
-        if (!isset($_FILES['bukti_transfer']) || $_FILES['bukti_transfer']['error'] !== UPLOAD_ERR_OK) {
-            http_response_code(422);
-            echo json_encode(['success' => false, 'message' => 'Bukti transfer wajib diupload untuk metode Transfer.']);
-            exit;
-        }
-        $file = $_FILES['bukti_transfer'];
-        $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $allowed = ['jpg', 'jpeg', 'png', 'pdf'];
-        if (!in_array($ext, $allowed)) {
-            http_response_code(422);
-            echo json_encode(['success' => false, 'message' => 'Format file tidak valid. Gunakan JPG, PNG, atau PDF.']);
-            exit;
-        }
-        if ($file['size'] > 2 * 1024 * 1024) {
-            http_response_code(422);
-            echo json_encode(['success' => false, 'message' => 'Ukuran file maksimal 2MB.']);
-            exit;
-        }
-        $uploadDir = 'uploads/bukti_transfer/';
-        if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
-        $newName = 'bukti_' . $booking_id . '_' . time() . '.' . $ext;
-        if (!move_uploaded_file($file['tmp_name'], $uploadDir . $newName)) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Gagal mengupload file. Coba lagi.']);
-            exit;
-        }
-        $bukti = $newName;
-    }
-
-    $stmt2 = mysqli_prepare($conn,
-        "INSERT INTO payments (booking_id, jumlah_bayar, metode_bayar, bukti_transfer) VALUES (?, ?, ?, ?)"
-    );
-    mysqli_stmt_bind_param($stmt2, 'idss', $booking_id, $jumlah, $metode, $bukti);
-    if (mysqli_stmt_execute($stmt2)) {
-        if ($metode === 'Cash') {
-            mysqli_query($conn, "UPDATE bookings SET status='confirmed' WHERE id=$booking_id");
-        }
+    if (updateBookingVerification($conn, $booking_id, 'confirmed', null, true, $metode)) {
         echo json_encode(['success' => true]);
     } else {
         http_response_code(500);
@@ -146,16 +134,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment
 }
 
 // Fallback non-AJAX POST (legacy safety)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment && ($_POST['action'] ?? '') !== 'batalkan') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!$payment || $payment['status_verifikasi'] === 'ditolak') && ($_POST['action'] ?? '') !== 'batalkan') {
     $metode = $_POST['metode_bayar'] ?? '';
     $jumlah = (float)($booking['total_harga']);
     $bukti  = '';
 
     if (empty($metode)) $errors[] = 'Pilih metode pembayaran.';
 
-    if ($metode === 'Transfer') {
+    if ($metode === 'QRIS') {
         if (!isset($_FILES['bukti_transfer']) || $_FILES['bukti_transfer']['error'] !== UPLOAD_ERR_OK) {
-            $errors[] = 'Bukti transfer wajib diupload.';
+            $errors[] = 'Bukti pembayaran wajib diupload.';
         } else {
             $file = $_FILES['bukti_transfer'];
             $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
@@ -177,24 +165,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$payment && ($_POST['action'] ?? '
     }
 
     if (empty($errors)) {
-        $stmt2 = mysqli_prepare($conn,
-            "INSERT INTO payments (booking_id, jumlah_bayar, metode_bayar, bukti_transfer) VALUES (?, ?, ?, ?)"
-        );
-        if ($stmt2) {
-            mysqli_stmt_bind_param($stmt2, 'idss', $booking_id, $jumlah, $metode, $bukti);
-            if (mysqli_stmt_execute($stmt2)) {
-                if ($metode === 'Cash') {
-                    mysqli_query($conn, "UPDATE bookings SET status='confirmed' WHERE id=$booking_id");
-                }
-                $success = 'Pembayaran berhasil dicatat!';
-                mysqli_stmt_execute($stmtP);
-                $payment = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtP));
-            } else {
-                $errors[] = 'Gagal menyimpan pembayaran.';
-            }
-            mysqli_stmt_close($stmt2);
+        if (updateBookingVerification($conn, $booking_id, 'confirmed', null, true, $metode)) {
+            $success = 'Pembayaran berhasil dicatat!';
+            mysqli_stmt_execute($stmtP);
+            $payment = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtP));
         } else {
-            $errors[] = 'Gagal memproses pembayaran: ' . mysqli_error($conn);
+            $errors[] = 'Gagal menyimpan pembayaran.';
         }
     }
     mysqli_stmt_close($stmtP);
@@ -280,13 +256,19 @@ $bisaDibatalkan = in_array($booking['status'], ['pending', 'menunggu'], true);
             </div>
 
             <!-- Status Pembayaran / Form -->
-            <?php if ($payment): ?>
+            <?php if ($payment && $payment['status_verifikasi'] !== 'ditolak'): ?>
                 <div class="card fade-up">
                     <h2>Status Pembayaran</h2>
                     <div class="detail-box">
                         <div class="detail-row">
                             <span class="label">Metode</span>
-                            <span class="value"><?= $payment['metode_bayar'] ?></span>
+                            <span class="value">
+                                <?php if ($payment['metode_bayar'] === 'QRIS'): ?>
+                                    <span class="badge" style="background:#EEF6FF; color:#0EA5E9; font-weight:700; font-size:0.8rem; padding:3px 10px; border-radius:6px;">QRIS</span>
+                                <?php else: ?>
+                                    <?= htmlspecialchars($payment['metode_bayar']) ?>
+                                <?php endif; ?>
+                            </span>
                         </div>
                         <div class="detail-row">
                             <span class="label">Jumlah Dibayar</span>
@@ -308,7 +290,7 @@ $bisaDibatalkan = in_array($booking['status'], ['pending', 'menunggu'], true);
                         </div>
                         <?php if ($payment['bukti_transfer']): ?>
                         <div class="detail-row">
-                            <span class="label">Bukti Transfer</span>
+                            <span class="label">Bukti Pembayaran</span>
                             <span class="value">
                                 <a href="uploads/bukti_transfer/<?= htmlspecialchars($payment['bukti_transfer']) ?>"
                                    target="_blank" class="btn btn-sm btn-secondary">Lihat Bukti</a>
@@ -316,12 +298,100 @@ $bisaDibatalkan = in_array($booking['status'], ['pending', 'menunggu'], true);
                         </div>
                         <?php endif; ?>
                     </div>
-                    <div class="alert alert-info" style="margin-top: 16px;">
-                        Pembayaran Anda sedang dalam proses verifikasi admin. Terima kasih!
+                    <div class="alert alert-<?= $payment['status_verifikasi'] === 'terverifikasi' ? 'success' : 'info' ?>" style="margin-top: 16px;">
+                        <?php if ($payment['status_verifikasi'] === 'terverifikasi'): ?>
+                            Pembayaran Anda telah berhasil diverifikasi. Terima kasih!
+                        <?php else: ?>
+                            Pembayaran Anda sedang dalam proses verifikasi admin. Terima kasih!
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php else: ?>
                 <!-- Form Upload Pembayaran — submit via modal confirmation -->
+                <style>
+                .qris-panel-body {
+                    display: grid;
+                    grid-template-areas: 
+                        "info qr"
+                        "info nominal"
+                        "info countdown"
+                        "demo demo";
+                    grid-template-columns: 1.2fr 1fr;
+                    gap: 16px 24px;
+                }
+                .qris-info-col {
+                    grid-area: info;
+                }
+                .qris-qr-col {
+                    grid-area: qr;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }
+                .qris-nominal-row {
+                    grid-area: nominal;
+                    text-align: center;
+                }
+                .qris-countdown-row {
+                    grid-area: countdown;
+                    text-align: center;
+                }
+                .qris-demo-row {
+                    grid-area: demo;
+                }
+
+                .qris-timer-alert {
+                    color: #EF4444;
+                    font-weight: bold;
+                    font-family: monospace;
+                    font-size: 1rem;
+                }
+                .qris-badge-pending {
+                    background: #FEF3C7;
+                    color: #D97706;
+                    padding: 3px 10px;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    font-size: 0.8rem;
+                }
+                .qris-badge-expired {
+                    background: #FEE2E2;
+                    color: #DC2626;
+                    padding: 3px 10px;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    font-size: 0.8rem;
+                }
+                .btn-demo-group {
+                    display: flex;
+                    gap: 12px;
+                    width: 100%;
+                }
+
+                @media (max-width: 768px) {
+                    .qris-panel-body {
+                        grid-template-areas: 
+                            "qr"
+                            "nominal"
+                            "demo"
+                            "countdown"
+                            "info";
+                        grid-template-columns: 1fr;
+                        gap: 16px;
+                    }
+                    .qris-qr-col {
+                        margin: 0 auto;
+                    }
+                    .btn-demo-group {
+                        flex-direction: column;
+                        gap: 8px;
+                    }
+                    .btn-demo-group button {
+                        width: 100% !important;
+                    }
+                }
+                </style>
+
                 <div class="card fade-up">
                     <h2>Konfirmasi Pembayaran</h2>
                     <form id="form-payment" novalidate enctype="multipart/form-data">
@@ -330,31 +400,81 @@ $bisaDibatalkan = in_array($booking['status'], ['pending', 'menunggu'], true);
                             <label for="metode_bayar">Metode Pembayaran</label>
                             <select id="metode_bayar" name="metode_bayar" required onchange="toggleBukti(this.value)">
                                 <option value="">-- Pilih Metode --</option>
-                                <option value="Transfer">Transfer Bank</option>
+                                <option value="QRIS">QRIS Dummy</option>
                                 <option value="Cash">Cash (Bayar di Tempat)</option>
                             </select>
                         </div>
 
-                        <div id="area-bukti" style="display:none;">
-                            <div class="form-group">
-                                <label for="bukti_transfer">Upload Bukti Transfer</label>
-                                <div class="upload-area">
-                                    <span class="material-symbols-outlined" style="font-size:2rem; color:var(--blue); opacity:.6;">upload_file</span>
-                                    <p>Klik atau seret file ke sini</p>
-                                    <input type="file" id="bukti_transfer" name="bukti_transfer" accept=".jpg,.jpeg,.png,.pdf">
-                                    <p style="margin-top:6px;">Format: JPG, PNG, PDF – Maks. 2MB</p>
+                        <div id="area-bukti" style="display:none; margin-top: 20px;">
+                            <div class="qris-panel" style="background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05); margin-bottom: 20px;">
+                                
+                                <div style="text-align: center; margin-bottom: 20px; background: linear-gradient(135deg, #0EA5E9 0%, #2563EB 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                                    <h3 style="font-size: 1.35rem; font-weight: 800; margin: 0; display: inline-flex; align-items: center; gap: 8px;">
+                                        <span class="material-symbols-outlined" style="-webkit-text-fill-color: #0ea5e9;">qr_code_2</span> Pembayaran QRIS
+                                    </h3>
+                                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px; -webkit-text-fill-color: initial;">Silakan scan QR Code di bawah untuk menyelesaikan pembayaran</p>
                                 </div>
-                            </div>
-                            <div class="alert alert-info">
-                                <strong>Info Transfer:</strong><br>
-                                Bank BCA – 1234567890 – a/n PadelClub<br>
-                                Nominal: Rp <?= number_format($booking['total_harga'], 0, ',', '.') ?>
+
+                                <div class="qris-panel-body">
+                                    <!-- QR Column -->
+                                    <div class="qris-qr-col">
+                                        <div class="qris-image-wrapper" style="background: #fff; padding: 12px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid var(--border); display: inline-block;">
+                                            <img src="assets/images/qris.png" alt="QRIS QR Code" style="width: 180px; height: 180px; display: block; object-fit: contain;">
+                                        </div>
+                                    </div>
+
+                                    <!-- Nominal Row -->
+                                    <div class="qris-nominal-row" style="margin-top: 10px; font-size: 1.15rem; font-weight: 800; color: #22C55E;">
+                                        Nominal: Rp <?= number_format($booking['total_harga'], 0, ',', '.') ?>
+                                    </div>
+
+                                    <!-- Countdown Row -->
+                                    <div class="qris-countdown-row" style="margin-top: 4px;">
+                                        Status: <span id="qris-status-badge" class="qris-badge-pending">Belum Dibayar</span>
+                                        <span style="margin: 0 8px; color: var(--border);">|</span>
+                                        Expired: <span id="qris-timer" class="qris-timer-alert">15:00</span>
+                                    </div>
+
+                                    <!-- Demo Row -->
+                                    <div class="qris-demo-row" style="border-top: 1px solid var(--border); padding-top: 20px; margin-top: 10px;">
+                                        <div style="margin: 0; text-align: center;">
+                                            <label style="font-weight: 700; color: var(--navy); margin-bottom: 12px; display: block; font-size: 0.95rem;">
+                                                Demo Pembayaran
+                                            </label>
+                                            <div class="btn-demo-group">
+                                                <button type="button" class="btn btn-success" style="flex: 1; padding: 12px; font-weight: 700; font-size: 0.9rem;" onclick="processDemoPayment('bayar')">
+                                                    <span class="material-symbols-outlined" style="margin-right: 4px; font-size: 1.1rem; vertical-align: middle;">check_circle</span> Demo Bayar
+                                                </button>
+                                                <button type="button" class="btn btn-danger" style="flex: 1; padding: 12px; font-weight: 700; font-size: 0.9rem;" onclick="processDemoPayment('tidak_bayar')">
+                                                    <span class="material-symbols-outlined" style="margin-right: 4px; font-size: 1.1rem; vertical-align: middle;">cancel</span> Demo Tidak Bayar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Info Column -->
+                                    <div class="qris-info-col">
+                                        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--navy); margin: 0; display: flex; align-items: center; gap: 6px;">
+                                            <span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--blue);">info</span> Informasi Booking
+                                        </h4>
+                                        <div class="detail-box" style="margin-top: 10px; padding: 14px; border-radius: 12px; background: rgba(0,0,0,0.02); font-size: 0.85rem;">
+                                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;"><span style="color:var(--text-muted);">Booking ID:</span><strong>#<?= $booking['id'] ?></strong></div>
+                                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;"><span style="color:var(--text-muted);">Invoice:</span><strong style="font-family: monospace;">INV<?= date('ymd', strtotime($booking['created_at'])) ?><?= sprintf('%03d', $booking['id']) ?></strong></div>
+                                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;"><span style="color:var(--text-muted);">Customer:</span><strong><?= htmlspecialchars($booking['nama_lengkap']) ?></strong></div>
+                                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;"><span style="color:var(--text-muted);">Lapangan:</span><strong><?= htmlspecialchars($booking['nama_lapangan']) ?></strong></div>
+                                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;"><span style="color:var(--text-muted);">Tanggal:</span><strong><?= date('d M Y', strtotime($booking['tanggal_booking'])) ?></strong></div>
+                                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;"><span style="color:var(--text-muted);">Jam:</span><strong><?= substr($booking['jam_mulai'],0,5) ?> - <?= substr($booking['jam_selesai'],0,5) ?> WIB</strong></div>
+                                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;"><span style="color:var(--text-muted);">Durasi:</span><strong><?= $durasi ?> Jam</strong></div>
+                                            <div style="display:flex; justify-content:space-between; border-top: 1px solid var(--border); padding-top:6px; margin-top:4px;"><span style="color:var(--text-muted); font-weight:bold;">Total Pembayaran:</span><strong style="color: #0EA5E9; font-size: 1.05rem;">Rp <?= number_format($booking['total_harga'], 0, ',', '.') ?></strong></div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         <div style="display: flex; gap: 10px; margin-top: 8px;">
                             <a href="dashboarduser.php" class="btn btn-outline">Nanti Saja</a>
-                            <button type="button" class="btn btn-success" id="btn-show-pay-modal" style="flex:1;"
+                            <button type="button" class="btn btn-success" id="btn-show-pay-modal" style="flex:1; display:none;"
                                     onclick="showPaymentConfirmModal()">
                                 <span class="material-symbols-outlined">payments</span>
                                 Konfirmasi Pembayaran
@@ -516,7 +636,87 @@ $bisaDibatalkan = in_array($booking['status'], ['pending', 'menunggu'], true);
 
 <script>
 function toggleBukti(val) {
-    document.getElementById('area-bukti').style.display = val === 'Transfer' ? 'block' : 'none';
+    document.getElementById('area-bukti').style.display = val === 'QRIS' ? 'block' : 'none';
+    document.getElementById('btn-show-pay-modal').style.display = val === 'Cash' ? 'block' : 'none';
+}
+
+// Countdown timer (15 minutes = 900 seconds)
+let timeLeft = 900;
+const timerEl = document.getElementById('qris-timer');
+const statusBadgeEl = document.getElementById('qris-status-badge');
+
+let timerInterval;
+if (timerEl) {
+    function updateTimer() {
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            timerEl.textContent = 'Expired';
+            if (statusBadgeEl) {
+                statusBadgeEl.textContent = 'Expired';
+                statusBadgeEl.className = 'qris-badge-expired';
+            }
+            const btnSuccess = document.querySelector('.btn-demo-group .btn-success');
+            const btnDanger = document.querySelector('.btn-demo-group .btn-danger');
+            if (btnSuccess) btnSuccess.disabled = true;
+            if (btnDanger) btnDanger.disabled = true;
+            return;
+        }
+        
+        timeLeft--;
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    timerInterval = setInterval(updateTimer, 1000);
+    updateTimer();
+}
+
+function processDemoPayment(status) {
+    if (timeLeft <= 0) {
+        showToast('Waktu pembayaran QRIS telah kedaluwarsa. Silakan refresh halaman untuk mengulang.', 'error');
+        return;
+    }
+    
+    const btnSuccess = document.querySelector('.btn-demo-group .btn-success');
+    const btnDanger = document.querySelector('.btn-demo-group .btn-danger');
+    if (btnSuccess) btnSuccess.disabled = true;
+    if (btnDanger) btnDanger.disabled = true;
+
+    const formData = new FormData();
+    formData.append('action', 'demo_payment');
+    formData.append('status', status);
+
+    fetch('rincian_pembayaran.php?booking_id=<?= $booking_id ?>', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            if (status === 'bayar') {
+                setTimeout(() => {
+                    document.getElementById('modal-pay-success-title').textContent = 'Pembayaran Berhasil!';
+                    document.querySelector('#modal-payment-success p').textContent = 'Simulasi pembayaran QRIS Anda berhasil dicatat sebagai Lunas.';
+                    openModal('modal-payment-success');
+                }, 100);
+            } else {
+                showToast('Simulasi Pembayaran Gagal.', 'error');
+                setTimeout(() => {
+                    window.location.href = 'dashboarduser.php';
+                }, 1500);
+            }
+        } else {
+            showToast(data.message || 'Terjadi kesalahan. Silakan coba lagi.', 'error');
+            if (btnSuccess) btnSuccess.disabled = false;
+            if (btnDanger) btnDanger.disabled = false;
+        }
+    })
+    .catch(() => {
+        showToast('Koneksi bermasalah. Silakan coba lagi.', 'error');
+        if (btnSuccess) btnSuccess.disabled = false;
+        if (btnDanger) btnDanger.disabled = false;
+    });
 }
 
 function showPaymentConfirmModal() {
@@ -525,14 +725,7 @@ function showPaymentConfirmModal() {
         showToast('Silakan pilih metode pembayaran terlebih dahulu.', 'warning');
         return;
     }
-    if (metode.value === 'Transfer') {
-        const bukti = document.getElementById('bukti_transfer');
-        if (!bukti || !bukti.files.length) {
-            showToast('Silakan upload bukti transfer terlebih dahulu.', 'warning');
-            return;
-        }
-    }
-    document.getElementById('modal-pay-metode').textContent = metode.value === 'Transfer' ? 'Transfer Bank' : 'Cash di Tempat';
+    document.getElementById('modal-pay-metode').textContent = 'Cash di Tempat';
     openModal('modal-payment-confirm');
 }
 

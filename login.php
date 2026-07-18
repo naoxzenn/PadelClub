@@ -22,7 +22,7 @@ $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
-    $pass  = $_POST['password'] ?? '';
+    $pass = $_POST['password'] ?? '';
 
     if (empty($email) || empty($pass)) {
         $error = 'Email dan password wajib diisi.';
@@ -40,9 +40,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     // Session Fixation Protection
                     session_regenerate_id(true);
-                    $_SESSION['user_id']   = $user['id'];
-                    $_SESSION['nama']      = $user['nama_lengkap'];
-                    $_SESSION['role']      = $user['role'];
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['nama'] = $user['nama_lengkap'];
+                    $_SESSION['role'] = $user['role'];
+
+                    mysqli_query($conn, "UPDATE users SET last_login = NOW() WHERE id = " . (int) $user['id']);
 
                     $redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? '';
                     if (!empty($redirect) && (strpos($redirect, '/') === 0 || strpos($redirect, 'http') === 0 || strpos($redirect, 'checkin') === 0)) {
@@ -81,7 +83,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <?php if (isset($_GET['error']) && $_GET['error'] === 'oauth_failed'): ?>
-            <div class="alert alert-danger">Login Google gagal. <?= isset($_GET['details']) ? htmlspecialchars($_GET['details']) : '' ?></div>
+            <div class="alert alert-danger">Login Google gagal.
+                <?= isset($_GET['details']) ? htmlspecialchars($_GET['details']) : '' ?>
+            </div>
         <?php elseif (isset($_GET['error']) && $_GET['error'] === 'no_auth_code'): ?>
             <div class="alert alert-danger">Kode otorisasi Google tidak ditemukan.</div>
         <?php endif; ?>
@@ -90,11 +94,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="alert alert-success">Registrasi berhasil! Silakan login.</div>
         <?php endif; ?>
 
-        <form method="POST" action="login.php<?= isset($_GET['redirect']) ? '?redirect=' . urlencode($_GET['redirect']) : '' ?>" id="form-login">
+        <form method="POST"
+            action="login.php<?= isset($_GET['redirect']) ? '?redirect=' . urlencode($_GET['redirect']) : '' ?>"
+            id="form-login">
             <div class="form-group">
                 <label for="email">Alamat Email</label>
                 <input type="email" id="email" name="email" placeholder="email@contoh.com"
-                       value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required autofocus>
+                    value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required autofocus>
             </div>
 
             <div class="form-group">
@@ -111,10 +117,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <a href="auth/google-login.php" class="btn btn-google btn-block">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                <path fill="#4285F4" d="M46.5 24c0-1.61-.15-3.16-.43-4.67H24v9.09h12.63c-.55 2.9-2.19 5.35-4.65 7l7.21 5.59C43.39 36.6 46.5 30.9 46.5 24z"/>
-                <path fill="#FBBC05" d="M10.54 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.98-6.19z"/>
-                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.21-5.59c-2.05 1.37-4.67 2.2-8.68 2.2-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                <path fill="#EA4335"
+                    d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                <path fill="#4285F4"
+                    d="M46.5 24c0-1.61-.15-3.16-.43-4.67H24v9.09h12.63c-.55 2.9-2.19 5.35-4.65 7l7.21 5.59C43.39 36.6 46.5 30.9 46.5 24z" />
+                <path fill="#FBBC05"
+                    d="M10.54 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.98-6.19z" />
+                <path fill="#34A853"
+                    d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.21-5.59c-2.05 1.37-4.67 2.2-8.68 2.2-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
             </svg>
             Masuk dengan Google
         </a>
@@ -128,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="footer-link" style="margin-top: 10px; font-size: 12px; color: #aaa;">
-            Demo admin: <strong>admin@MyPadel.com</strong> / <strong>password</strong>
+
         </div>
     </div>
 </div>

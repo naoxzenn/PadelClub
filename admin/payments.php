@@ -19,29 +19,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $allowed_sv = ['menunggu', 'terverifikasi', 'ditolak'];
     
     if (in_array($sv, $allowed_sv)) {
-        $s = mysqli_prepare($conn, "UPDATE payments SET status_verifikasi=? WHERE id=?");
-        if ($s) {
-            mysqli_stmt_bind_param($s, 'si', $sv, $pid);
-            mysqli_stmt_execute($s);
-            mysqli_stmt_close($s);
+        $bp = mysqli_query($conn, "SELECT booking_id, metode_bayar FROM payments WHERE id=$pid");
+        $bp = $bp ? mysqli_fetch_assoc($bp) : null;
+        if ($bp) {
+            $booking_id = (int)$bp['booking_id'];
+            $metode = $bp['metode_bayar'] ?? 'Cash';
             
-            // Auto confirm booking jika terverifikasi
             if ($sv === 'terverifikasi') {
-                $bp = mysqli_query($conn, "SELECT booking_id FROM payments WHERE id=$pid");
-                $bp = mysqli_fetch_assoc($bp);
-                if ($bp) {
-                    updateBookingVerification($conn, $bp['booking_id'], 'confirmed', $_SESSION['user_id']);
-                }
+                updateBookingVerification($conn, $booking_id, 'confirmed', $_SESSION['user_id'], true, $metode);
             } elseif ($sv === 'ditolak') {
-                $bp = mysqli_query($conn, "SELECT booking_id FROM payments WHERE id=$pid");
-                $bp = mysqli_fetch_assoc($bp);
-                if ($bp) {
-                    updateBookingVerification($conn, $bp['booking_id'], 'cancelled', $_SESSION['user_id']);
-                }
+                updateBookingVerification($conn, $booking_id, 'cancelled', $_SESSION['user_id'], true, $metode);
+            } else {
+                updateBookingVerification($conn, $booking_id, 'pending', $_SESSION['user_id'], false, $metode);
             }
-            $msg = 'Verifikasi pembayaran #' . $pid . ' berhasil diperbarui.';
+            $msg = 'Verifikasi pembayaran untuk booking #' . $booking_id . ' berhasil diperbarui.';
         } else {
-            $err = 'Gagal memperbarui verifikasi pembayaran.';
+            $err = 'Data pembayaran tidak ditemukan.';
         }
     }
 }
@@ -180,7 +173,7 @@ function sortIcon($col) {
 
         <div style="margin-bottom: 24px;">
             <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--navy); margin-bottom: 6px;">Verifikasi Pembayaran</h1>
-            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Konfirmasi pembayaran transfer bank dan cash dari pelanggan.</p>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Konfirmasi pembayaran QRIS dan cash dari pelanggan.</p>
         </div>
 
         <!-- Filter Form -->
@@ -224,7 +217,7 @@ function sortIcon($col) {
                             <th>Tanggal Main</th>
                             <th><a href="<?= getSortUrl('metode_bayar') ?>" style="color:inherit; text-decoration:none;">Metode <?= sortIcon('metode_bayar') ?></a></th>
                             <th><a href="<?= getSortUrl('jumlah_bayar') ?>" style="color:inherit; text-decoration:none;">Jumlah <?= sortIcon('jumlah_bayar') ?></a></th>
-                            <th>Bukti Transfer</th>
+                            <th>Bukti Pembayaran</th>
                             <th><a href="<?= getSortUrl('status_verifikasi') ?>" style="color:inherit; text-decoration:none;">Status Verif <?= sortIcon('status_verifikasi') ?></a></th>
                             <th>Aksi</th>
                         </tr>
@@ -243,7 +236,7 @@ function sortIcon($col) {
                                 <td><?= htmlspecialchars($p['nama_lapangan']) ?></td>
                                 <td><?= date('d/m/Y', strtotime($p['tanggal_booking'])) ?></td>
                                 <td>
-                                    <span class="badge" style="background:<?= $p['metode_bayar']==='Transfer' ? '#EEF6FF; color:#0EA5E9;' : '#F0FDF4; color:#16A34A;' ?> font-weight:700;">
+                                    <span class="badge" style="background:<?= ($p['metode_bayar']==='QRIS' || $p['metode_bayar']==='Transfer') ? '#EEF6FF; color:#0EA5E9;' : '#F0FDF4; color:#16A34A;' ?> font-weight:700;">
                                         <?= $p['metode_bayar'] ?>
                                     </span>
                                 </td>
@@ -254,23 +247,35 @@ function sortIcon($col) {
                                             <span class="material-symbols-outlined" style="font-size:1rem;">visibility</span> Lihat Bukti
                                         </a>
                                     <?php else: ?>
-                                        <span style="color:#aaa; font-style:italic;">Cash / Tanpa Bukti</span>
+                                        <span style="color:#aaa; font-style:italic;"><?= htmlspecialchars($p['metode_bayar']) ?> / Tanpa Bukti</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <span class="status-<?= $sc ?>"><?= ucfirst($sv) ?></span>
+                                    <?php
+                                    if ($sv === 'terverifikasi') {
+                                        echo '<span class="status-confirmed">Lunas</span>';
+                                    } elseif ($sv === 'ditolak') {
+                                        echo '<span class="status-cancelled">Gagal</span>';
+                                    } else {
+                                        echo '<span class="status-pending">Pending</span>';
+                                    }
+                                    ?>
                                 </td>
                                 <td>
-                                    <form method="POST" style="display:flex; gap:4px; align-items:center; margin:0;">
-                                        <input type="hidden" name="action" value="verifikasi_payment">
-                                        <input type="hidden" name="payment_id" value="<?= $p['id'] ?>">
-                                        <select name="status_verifikasi" style="padding:4px 6px; font-size:13px; border:1px solid var(--border); border-radius:3px;">
-                                            <option value="menunggu" <?= $sv==='menunggu' ? 'selected' : '' ?>>Menunggu</option>
-                                            <option value="terverifikasi" <?= $sv==='terverifikasi' ? 'selected' : '' ?>>Terverifikasi</option>
-                                            <option value="ditolak" <?= $sv==='ditolak' ? 'selected' : '' ?>>Ditolak</option>
-                                        </select>
-                                        <button type="submit" class="btn btn-sm btn-success" style="padding: 6px 10px; font-size: 0.75rem;">Verif</button>
-                                    </form>
+                                    <?php if ($p['metode_bayar'] !== 'QRIS'): ?>
+                                        <form method="POST" style="display:flex; gap:4px; align-items:center; margin:0;">
+                                            <input type="hidden" name="action" value="verifikasi_payment">
+                                            <input type="hidden" name="payment_id" value="<?= $p['id'] ?>">
+                                            <select name="status_verifikasi" style="padding:4px 6px; font-size:13px; border:1px solid var(--border); border-radius:3px;">
+                                                <option value="menunggu" <?= $sv==='menunggu' ? 'selected' : '' ?>>Menunggu</option>
+                                                <option value="terverifikasi" <?= $sv==='terverifikasi' ? 'selected' : '' ?>>Terverifikasi</option>
+                                                <option value="ditolak" <?= $sv==='ditolak' ? 'selected' : '' ?>>Ditolak</option>
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-success" style="padding: 6px 10px; font-size: 0.75rem;">Verif</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <span style="color:var(--text-muted); font-size:0.85rem; font-style:italic;">Otomatis (QRIS)</span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

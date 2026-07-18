@@ -2,6 +2,19 @@
 if (!isset($pageTitle))
     $pageTitle = 'PadelClub';
 $currentPage = basename($_SERVER['PHP_SELF']);
+
+// Load updated user details for sidebar if logged in
+$headerUser = null;
+if (isset($_SESSION['user_id'])) {
+    require_once __DIR__ . '/../config/koneksi.php';
+    $stmtH = mysqli_prepare($conn, "SELECT nama_lengkap, role, avatar, login_provider FROM users WHERE id = ?");
+    if ($stmtH) {
+        mysqli_stmt_bind_param($stmtH, 'i', $_SESSION['user_id']);
+        mysqli_stmt_execute($stmtH);
+        $headerUser = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtH));
+        mysqli_stmt_close($stmtH);
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -34,12 +47,12 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 </head>
 
 <body
-    class="<?= (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'kasir')) ? 'dashboard-body' : '' ?>">
+    class="<?= (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'kasir' || $_SESSION['role'] === 'customer')) ? 'dashboard-body' : '' ?>">
 
     <!-- Toast container (shared by all pages) -->
     <div id="toast-container"></div>
 
-    <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'kasir')): ?>
+    <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'kasir' || $_SESSION['role'] === 'customer')): ?>
         <!-- DASHBOARD LAYOUT -->
         <div class="dashboard-container">
             <!-- Sidebar -->
@@ -49,17 +62,30 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                         <span class="material-symbols-outlined" style="font-size: 2.2rem; color: var(--blue);">sports_tennis</span>
                         <span class="gradient-text" style="font-size: 1.6rem; font-weight: 800; text-decoration: none;">PadelClub</span>
                     </div>
-                    <?php if ($_SESSION['role'] === 'admin'): ?>
-                        <div class="sidebar-profile" style="margin: 15px 0; text-align: center;">
-                            <div class="profile-avatar" style="width: 70px; height: 70px; border-radius: 50%; background: var(--gradient); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; margin: 0 auto 10px auto; border: 3px solid rgba(255,255,255,0.1); box-shadow: var(--shadow-sm);">
-                                <?= strtoupper(substr($_SESSION['nama'] ?? 'A', 0, 1)) ?>
-                            </div>
-                            <h4 class="profile-name" style="font-size: 1rem; font-weight: 700; color: #fff; margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;"><?= htmlspecialchars($_SESSION['nama'] ?? 'Admin') ?></h4>
-                            <span class="role-badge admin" style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(14, 165, 233, 0.15); color: var(--blue); border: 1px solid rgba(14, 165, 233, 0.3); display: inline-block; padding: 2px 8px; border-radius: 4px;"><?= ucfirst($_SESSION['role']) ?></span>
+                    <div class="sidebar-profile" style="margin: 15px 0; text-align: center;">
+                        <div class="profile-avatar" style="width: 70px; height: 70px; border-radius: 50%; background: var(--gradient); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; margin: 0 auto 10px auto; border: 3px solid rgba(255,255,255,0.1); box-shadow: var(--shadow-sm); overflow:hidden;">
+                            <?php 
+                            $dispAvatar = $headerUser['avatar'] ?? '';
+                            $dispName = $headerUser['nama_lengkap'] ?? $_SESSION['nama'] ?? 'User';
+                            $dispRole = $_SESSION['role'] ?? 'customer';
+                            if (!empty($dispAvatar)): 
+                                if (str_starts_with($dispAvatar, 'http')): ?>
+                                    <img src="<?= htmlspecialchars($dispAvatar) ?>" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">
+                                <?php else: ?>
+                                    <img src="<?= $baseUrl ?? '' ?>uploads/profile/<?= htmlspecialchars($dispAvatar) ?>" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <?= strtoupper(substr($dispName, 0, 1)) ?>
+                            <?php endif; ?>
                         </div>
-                    <?php else: ?>
-                        <span class="role-badge <?= $_SESSION['role'] ?>"><?= ucfirst($_SESSION['role']) ?></span>
-                    <?php endif; ?>
+                        <h4 class="profile-name" style="font-size: 1rem; font-weight: 700; color: #fff; margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;"><?= htmlspecialchars($dispName) ?></h4>
+                        <?php 
+                        $badgeBg = $dispRole === 'admin' ? 'rgba(14, 165, 233, 0.15)' : ($dispRole === 'kasir' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(34, 197, 94, 0.15)');
+                        $badgeCo = $dispRole === 'admin' ? 'var(--blue)' : ($dispRole === 'kasir' ? '#F59E0B' : 'var(--green)');
+                        $badgeBo = $dispRole === 'admin' ? 'rgba(14, 165, 233, 0.3)' : ($dispRole === 'kasir' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(34, 197, 94, 0.3)');
+                        ?>
+                        <span class="role-badge" style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; background: <?= $badgeBg ?>; color: <?= $badgeCo ?>; border: 1px solid <?= $badgeBo ?>; display: inline-block; padding: 2px 8px; border-radius: 4px;"><?= ucfirst($dispRole) ?></span>
+                    </div>
                 </div>
 
                 <nav class="sidebar-nav">
@@ -160,9 +186,31 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                             class="<?= isset($_GET['tab']) && $_GET['tab'] === 'receipt' ? 'active' : '' ?>">
                             <span class="material-symbols-outlined">receipt</span> Cetak Struk
                         </a>
+                        <a href="<?= $baseUrl ?? '' ?>kasir/checkin.php"
+                            class="<?= $currentPage === 'checkin.php' && strpos($_SERVER['REQUEST_URI'], '/kasir/') !== false ? 'active' : '' ?>">
+                            <span class="material-symbols-outlined">qr_code_scanner</span> QR Check-in
+                        </a>
                         <a href="<?= $baseUrl ?? '' ?>kasir/dashboard.php?tab=profil"
                             class="<?= isset($_GET['tab']) && $_GET['tab'] === 'profil' ? 'active' : '' ?>">
                             <span class="material-symbols-outlined">account_circle</span> Profil
+                        </a>
+
+                    <?php elseif ($_SESSION['role'] === 'customer'): ?>
+                        <a href="<?= $baseUrl ?? '' ?>dashboarduser.php"
+                            class="<?= $currentPage === 'dashboarduser.php' && strpos($_SERVER['REQUEST_URI'], 'scroll=riwayat') === false ? 'active' : '' ?>">
+                            <span class="material-symbols-outlined">dashboard</span> Dashboard
+                        </a>
+                        <a href="<?= $baseUrl ?? '' ?>booking.php"
+                            class="<?= $currentPage === 'booking.php' ? 'active' : '' ?>">
+                            <span class="material-symbols-outlined">sports_tennis</span> Booking
+                        </a>
+                        <a href="<?= $baseUrl ?? '' ?>dashboarduser.php?scroll=riwayat"
+                            class="<?= $currentPage === 'dashboarduser.php' && strpos($_SERVER['REQUEST_URI'], 'scroll=riwayat') !== false ? 'active' : '' ?>">
+                            <span class="material-symbols-outlined">history</span> Riwayat Booking
+                        </a>
+                        <a href="<?= $baseUrl ?? '' ?>profil.php"
+                            class="<?= $currentPage === 'profil.php' ? 'active' : '' ?>">
+                            <span class="material-symbols-outlined">account_circle</span> Pengaturan Profil
                         </a>
                     <?php endif; ?>
                     <button id="theme-toggle-sidebar" class="sidebar-theme-toggle-btn" aria-label="Toggle Theme">
@@ -177,27 +225,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
             <!-- Main Content Area -->
             <main class="dashboard-main">
-                <!-- Floating toggle button for admin mobile sidebar -->
-                <?php if ($_SESSION['role'] === 'admin'): ?>
+                <!-- Floating toggle button for admin, cashier and customer mobile sidebar -->
+                <?php if ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'kasir' || $_SESSION['role'] === 'customer'): ?>
                     <button class="sidebar-toggle floating-toggle" id="sidebar-toggle-admin" aria-label="Toggle Sidebar" style="display:none; position:fixed; top:16px; right:16px; z-index:1100; width:44px; height:44px; border-radius:50%; background:var(--navy); color:#fff; border:1px solid rgba(255,255,255,0.15); box-shadow:var(--shadow-md); align-items:center; justify-content:center; cursor:pointer;">
                         <span class="material-symbols-outlined">menu</span>
                     </button>
-                <?php endif; ?>
-
-                <!-- Dashboard Header (Only shown for Cashier Role) -->
-                <?php if (isset($_SESSION['role']) && strcasecmp($_SESSION['role'], 'kasir') === 0): ?>
-                    <header class="dashboard-header">
-                        <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle Sidebar">
-                            <span class="material-symbols-outlined">menu</span>
-                        </button>
-                        <div class="header-title">
-                            <h2><?= htmlspecialchars($pageTitle) ?></h2>
-                        </div>
-                        <div class="header-user">
-                            <div class="avatar"><?= strtoupper(substr($_SESSION['nama'] ?? 'U', 0, 1)) ?></div>
-                            <span class="user-name"><?= htmlspecialchars($_SESSION['nama'] ?? '') ?></span>
-                        </div>
-                    </header>
                 <?php endif; ?>
 
                 <div class="dashboard-content">
@@ -268,13 +300,21 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                     <span class="material-symbols-outlined">dashboard</span> Dashboard Kasir
                                 </a>
                             <?php else: ?>
+                                <a href="<?= $baseUrl ?? '' ?>dashboarduser.php"
+                                    class="<?= $currentPage === 'dashboarduser.php' && strpos($_SERVER['REQUEST_URI'], 'scroll=riwayat') === false ? 'active' : '' ?>">
+                                    <span class="material-symbols-outlined">dashboard</span> Dashboard
+                                </a>
                                 <a href="<?= $baseUrl ?? '' ?>booking.php"
                                     class="<?= $currentPage === 'booking.php' ? 'active' : '' ?>">
                                     <span class="material-symbols-outlined">sports_tennis</span> Booking
                                 </a>
-                                <a href="<?= $baseUrl ?? '' ?>dashboarduser.php"
-                                    class="<?= $currentPage === 'dashboarduser.php' ? 'active' : '' ?>">
-                                    <span class="material-symbols-outlined">receipt_long</span> Dashboard Saya
+                                <a href="<?= $baseUrl ?? '' ?>dashboarduser.php?scroll=riwayat"
+                                    class="<?= $currentPage === 'dashboarduser.php' && strpos($_SERVER['REQUEST_URI'], 'scroll=riwayat') !== false ? 'active' : '' ?>">
+                                    <span class="material-symbols-outlined">history</span> Riwayat Booking
+                                </a>
+                                <a href="<?= $baseUrl ?? '' ?>profil.php"
+                                    class="<?= $currentPage === 'profil.php' ? 'active' : '' ?>">
+                                    <span class="material-symbols-outlined">account_circle</span> Pengaturan Profil
                                 </a>
                             <?php endif; ?>
                             <div class="mobile-nav-divider"></div>

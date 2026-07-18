@@ -1,0 +1,628 @@
+<?php
+// kasir/checkin.php - QR Scanner Check-in untuk Kasir
+
+session_start();
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'kasir'], true)) {
+    header('Location: ../login.php');
+    exit;
+}
+
+require_once __DIR__ . '/../config/koneksi.php';
+require_once __DIR__ . '/../models/BookingModel.php';
+require_once __DIR__ . '/../helpers/QRHelper.php';
+
+$pageTitle = 'QR Check-in Kasir';
+$baseUrl = '../';
+
+include __DIR__ . '/../includes/header.php';
+?>
+
+<style>
+/* ---- QR Scanner Page Styles ---- */
+.qr-page-wrap {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding-bottom: 40px;
+}
+.qr-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+}
+@media (max-width: 700px) {
+    .qr-grid { grid-template-columns: 1fr; }
+}
+
+/* Scanner Card */
+.scanner-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+.scanner-header {
+    background: var(--navy);
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+}
+.scanner-body {
+    padding: 24px;
+}
+#qr-reader {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 2px solid var(--border);
+    background: #000;
+    min-height: 220px;
+}
+/* Override html5-qrcode default styles */
+#qr-reader img { display: none !important; }
+#qr-reader__scan_region { border-radius: var(--radius-md); }
+#qr-reader__dashboard_section_csr button {
+    background: var(--blue) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 8px 16px !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+}
+#qr-reader__camera_permission_button {
+    background: var(--blue) !important;
+    color: #fff !important;
+}
+.scanner-status {
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+    font-weight: 600;
+    display: none;
+    align-items: center;
+    gap: 8px;
+}
+.scanner-status.active { display: flex; }
+.scanner-status.scanning { background: rgba(14,165,233,0.08); color: var(--blue); border: 1px solid rgba(14,165,233,0.2); }
+.scanner-status.found { background: rgba(34,197,94,0.08); color: var(--green-dark); border: 1px solid rgba(34,197,94,0.2); }
+.scanner-status.error { background: rgba(239,68,68,0.08); color: #EF4444; border: 1px solid rgba(239,68,68,0.2); }
+
+/* Manual Input Card */
+.manual-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+.manual-header {
+    background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+}
+.manual-body { padding: 24px; }
+.search-input-wrap {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.code-input {
+    flex: 1;
+    padding: 13px 16px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.06em;
+    transition: border-color 0.2s;
+    background: var(--surface);
+    color: var(--navy);
+}
+.code-input:focus { outline: none; border-color: var(--blue); }
+.btn-search {
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 13px 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.btn-search:hover { background: var(--blue-dark); transform: translateY(-1px); }
+
+/* Result Card */
+#booking-result { display: none; }
+.result-card {
+    border-radius: var(--radius-md);
+    border: 2px solid var(--border);
+    overflow: hidden;
+}
+.result-top {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.result-name {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--navy);
+}
+.checkin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+.badge-ci-done    { background: rgba(34,197,94,0.1); color: var(--green-dark); border: 1px solid rgba(34,197,94,0.25); }
+.badge-ci-pending { background: rgba(245,158,11,0.1); color: #D97706; border: 1px solid rgba(245,158,11,0.25); }
+.badge-ci-invalid { background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.25); }
+.result-rows { padding: 0 20px; }
+.result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.88rem;
+}
+.result-row:last-child { border-bottom: none; }
+.result-label { color: var(--text-muted); font-weight: 500; }
+.result-value { color: var(--navy); font-weight: 700; text-align: right; }
+.result-actions { padding: 16px 20px; border-top: 1px solid var(--border); background: var(--surface); }
+.btn-confirm-checkin {
+    width: 100%;
+    padding: 14px;
+    background: var(--gradient);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+}
+.btn-confirm-checkin:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: var(--shadow-glow); }
+.btn-confirm-checkin:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+/* Error / Info box */
+.result-error {
+    padding: 14px 20px;
+    background: rgba(239,68,68,0.06);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #EF4444;
+}
+.result-success {
+    padding: 14px 20px;
+    background: rgba(34,197,94,0.07);
+    border: 1px solid rgba(34,197,94,0.2);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--green-dark);
+}
+
+/* Stats Row */
+.ci-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+@media (max-width: 500px) { .ci-stats { grid-template-columns: 1fr 1fr; } }
+.ci-stat-card {
+    background: var(--white);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    padding: 18px 16px;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+}
+.ci-stat-num {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+.ci-stat-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+</style>
+
+<?php
+// Load stats
+$model = new BookingModel($pdo);
+$stats = $model->getCheckinStats();
+?>
+
+<div class="dashboard-content" style="padding: 24px;">
+
+    <!-- Page Title -->
+    <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 1.6rem; font-weight: 800; color: var(--navy); margin-bottom: 4px; display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="font-size: 1.8rem; color: var(--blue);">qr_code_scanner</span>
+            QR Check-in
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Scan QR Code atau input kode booking untuk konfirmasi kehadiran pelanggan</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="ci-stats">
+        <div class="ci-stat-card">
+            <div class="ci-stat-num" style="color: var(--blue);"><?= $stats['total_today'] ?></div>
+            <div class="ci-stat-label">Booking Hari Ini</div>
+        </div>
+        <div class="ci-stat-card">
+            <div class="ci-stat-num" style="color: var(--green);"><?= $stats['checked_today'] ?></div>
+            <div class="ci-stat-label">Sudah Hadir</div>
+        </div>
+        <div class="ci-stat-card">
+            <div class="ci-stat-num" style="color: #F59E0B;"><?= $stats['unchecked_today'] ?></div>
+            <div class="ci-stat-label">Belum Hadir</div>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="qr-grid">
+
+        <!-- LEFT: QR Scanner -->
+        <div class="scanner-card">
+            <div class="scanner-header">
+                <span class="material-symbols-outlined">photo_camera</span>
+                Kamera Scanner
+            </div>
+            <div class="scanner-body">
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 14px;">
+                    Arahkan kamera ke QR Code pada tiket pelanggan. Klik <strong>Start Scanning</strong> untuk mengaktifkan kamera.
+                </p>
+                <div id="qr-reader"></div>
+                <div class="scanner-status scanning" id="scanner-msg">
+                    <span class="material-symbols-outlined" style="font-size: 1.2rem; animation: spin 1.2s linear infinite;">progress_activity</span>
+                    Menginisialisasi scanner...
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Manual Input + Result -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+
+            <!-- Manual Input -->
+            <div class="manual-card">
+                <div class="manual-header">
+                    <span class="material-symbols-outlined">keyboard</span>
+                    Input Manual Kode Booking
+                </div>
+                <div class="manual-body">
+                    <div class="search-input-wrap">
+                        <input type="text"
+                               id="manual-code-input"
+                               class="code-input"
+                               placeholder="Contoh: BK20240718ABCD"
+                               autocomplete="off"
+                               spellcheck="false">
+                        <button class="btn-search" onclick="searchByCode()">
+                            <span class="material-symbols-outlined">search</span>
+                            Cari
+                        </button>
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted);">
+                        Tekan <kbd style="background:var(--surface-alt); padding:1px 5px; border-radius:4px; font-family:monospace;">Enter</kbd> atau klik Cari untuk mencari booking
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Panel -->
+            <div id="booking-result">
+                <!-- Filled by JS -->
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- html5-qrcode via CDN -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
+<script>
+const BASE_URL = '<?= $baseUrl ?>';
+const PROCESS_URL = BASE_URL + 'kasir/checkin_process.php';
+
+// ---- QR Scanner Init ----
+let html5QrCode = null;
+let scannerRunning = false;
+
+function startScanner() {
+    if (html5QrCode && scannerRunning) return;
+    
+    html5QrCode = new Html5Qrcode("qr-reader");
+    const config = { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1 };
+    
+    setScannerMsg('Memulai kamera...', 'scanning');
+
+    html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText) => {
+            // QR decoded!
+            let code = decodedText;
+            // If the QR contains the full URL, extract the code param
+            try {
+                const url = new URL(decodedText);
+                const cParam = url.searchParams.get('code');
+                if (cParam) code = cParam;
+            } catch (_) { /* not a URL, use as-is */ }
+
+            if (scannerRunning) {
+                html5QrCode.pause(); // Pause to prevent re-trigger
+                setScannerMsg('QR terdeteksi: ' + code, 'found');
+                fetchBooking(code, true);
+            }
+        },
+        (errorMessage) => {
+            // scan failure — expected, ignore
+        }
+    ).then(() => {
+        scannerRunning = true;
+        setScannerMsg('Scanner aktif. Arahkan QR ke kamera.', 'scanning');
+    }).catch(err => {
+        setScannerMsg('Kamera tidak tersedia. Gunakan input manual.', 'error');
+    });
+}
+
+function setScannerMsg(text, type) {
+    const el = document.getElementById('scanner-msg');
+    el.textContent = text;
+    el.className = 'scanner-status active ' + type;
+    if (type === 'scanning') {
+        el.innerHTML = '<span class="material-symbols-outlined" style="font-size:1.2rem;">radar</span> ' + text;
+    } else if (type === 'found') {
+        el.innerHTML = '<span class="material-symbols-outlined" style="font-size:1.2rem;">check_circle</span> ' + text;
+    } else if (type === 'error') {
+        el.innerHTML = '<span class="material-symbols-outlined" style="font-size:1.2rem;">error</span> ' + text;
+    }
+}
+
+// Auto-start scanner on load
+window.addEventListener('load', () => {
+    setTimeout(startScanner, 500);
+});
+
+// ---- Manual Input ----
+document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('manual-code-input');
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') searchByCode();
+    });
+});
+
+function searchByCode() {
+    const code = document.getElementById('manual-code-input').value.trim();
+    if (!code) {
+        alert('Masukkan kode booking terlebih dahulu.');
+        return;
+    }
+    fetchBooking(code, false);
+}
+
+// ---- Fetch Booking Info ----
+function fetchBooking(code, fromScanner) {
+    showLoading();
+    fetch(PROCESS_URL + '?action=lookup&code=' + encodeURIComponent(code))
+        .then(r => r.json())
+        .then(data => {
+            renderResult(data, code, fromScanner);
+        })
+        .catch(() => {
+            renderError('Gagal terhubung ke server. Coba lagi.');
+            if (fromScanner && html5QrCode) {
+                setTimeout(() => html5QrCode.resume(), 3000);
+            }
+        });
+}
+
+function showLoading() {
+    const el = document.getElementById('booking-result');
+    el.style.display = 'block';
+    el.innerHTML = `
+        <div style="text-align:center; padding:32px; background:var(--white); border-radius:var(--radius-md); border:1px solid var(--border);">
+            <span class="material-symbols-outlined" style="font-size:2rem; color:var(--blue); animation:spin 1s linear infinite; display:block; margin-bottom:8px;">progress_activity</span>
+            <span style="color:var(--text-muted); font-weight:600; font-size:0.9rem;">Mencari booking...</span>
+        </div>`;
+}
+
+function renderError(msg) {
+    const el = document.getElementById('booking-result');
+    el.style.display = 'block';
+    el.innerHTML = `<div class="result-error">
+        <span class="material-symbols-outlined">error</span>
+        ${escapeHtml(msg)}
+    </div>`;
+}
+
+function renderResult(data, code, fromScanner) {
+    const el = document.getElementById('booking-result');
+    el.style.display = 'block';
+
+    if (data.error) {
+        el.innerHTML = `<div class="result-error">
+            <span class="material-symbols-outlined">error</span>
+            ${escapeHtml(data.error)}
+        </div>`;
+        if (fromScanner && html5QrCode) {
+            setTimeout(() => html5QrCode.resume(), 3500);
+        }
+        return;
+    }
+
+    const b = data.booking;
+    const isCheckedIn = b.checkin_status === 'Checked In';
+    const canCheckin  = data.can_checkin;
+
+    let badgeHtml = '';
+    if (isCheckedIn) {
+        badgeHtml = `<span class="checkin-badge badge-ci-done"><span class="material-symbols-outlined" style="font-size:0.9rem;">how_to_reg</span> Sudah Hadir</span>`;
+    } else if (!canCheckin) {
+        badgeHtml = `<span class="checkin-badge badge-ci-invalid"><span class="material-symbols-outlined" style="font-size:0.9rem;">block</span> Tidak Valid</span>`;
+    } else {
+        badgeHtml = `<span class="checkin-badge badge-ci-pending"><span class="material-symbols-outlined" style="font-size:0.9rem;">schedule</span> Belum Hadir</span>`;
+    }
+
+    let actionHtml = '';
+    if (isCheckedIn) {
+        actionHtml = `<div class="result-success">
+            <span class="material-symbols-outlined">check_circle</span>
+            Pelanggan sudah check-in pada ${escapeHtml(b.checkin_time_fmt || '-')} WIB
+        </div>`;
+    } else if (!canCheckin) {
+        actionHtml = `<div class="result-error">
+            <span class="material-symbols-outlined">block</span>
+            ${escapeHtml(data.reason || 'Check-in tidak dapat dilakukan.')}
+        </div>`;
+        if (fromScanner && html5QrCode) {
+            setTimeout(() => html5QrCode.resume(), 4000);
+        }
+    } else {
+        actionHtml = `<button class="btn-confirm-checkin" id="btn-do-checkin" onclick="doCheckin('${escapeHtml(b.booking_code)}')">
+            <span class="material-symbols-outlined">how_to_reg</span>
+            Konfirmasi Check-in
+        </button>`;
+    }
+
+    el.innerHTML = `
+        <div class="result-card">
+            <div class="result-top">
+                <div>
+                    <div class="result-name">${escapeHtml(b.customer_name)}</div>
+                    <div style="font-family:monospace; font-size:0.8rem; color:var(--text-muted); margin-top:2px;">${escapeHtml(b.booking_code)}</div>
+                </div>
+                ${badgeHtml}
+            </div>
+            <div class="result-rows">
+                <div class="result-row">
+                    <span class="result-label">Lapangan</span>
+                    <span class="result-value">${escapeHtml(b.court_name)}</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Tanggal</span>
+                    <span class="result-value">${escapeHtml(b.tanggal_fmt)}</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Jam Bermain</span>
+                    <span class="result-value">${escapeHtml(b.jam_mulai)} – ${escapeHtml(b.jam_selesai)} WIB</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Status Bayar</span>
+                    <span class="result-value" style="color:${b.payment_status === 'Verified' ? 'var(--green)' : '#F59E0B'}">
+                        ${b.payment_status === 'Verified' ? 'Lunas ✓' : b.payment_status}
+                    </span>
+                </div>
+            </div>
+            <div class="result-actions">${actionHtml}</div>
+        </div>`;
+}
+
+// ---- Perform Check-in ----
+function doCheckin(code) {
+    const btn = document.getElementById('btn-do-checkin');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite;">progress_activity</span> Memproses...';
+    }
+
+    fetch(PROCESS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=checkin&code=' + encodeURIComponent(code)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            renderCheckinSuccess(data.booking);
+            // Resume scanner after 5s
+            if (html5QrCode) {
+                setTimeout(() => {
+                    html5QrCode.resume();
+                    setScannerMsg('Scanner aktif. Arahkan QR ke kamera.', 'scanning');
+                }, 5000);
+            }
+            // Refresh stats
+            location.reload();
+        } else {
+            renderError(data.error || 'Gagal melakukan check-in.');
+        }
+    })
+    .catch(() => renderError('Terjadi kesalahan jaringan.'));
+}
+
+function renderCheckinSuccess(b) {
+    const el = document.getElementById('booking-result');
+    el.innerHTML = `
+        <div class="result-success" style="flex-direction:column; text-align:center; padding:24px; gap:12px;">
+            <span class="material-symbols-outlined" style="font-size:3rem; color:var(--green);">task_alt</span>
+            <div>
+                <div style="font-size:1.1rem; font-weight:800; color:var(--navy); margin-bottom:4px;">Check-in Berhasil!</div>
+                <div style="font-size:0.88rem; color:var(--text-muted);">
+                    <strong>${escapeHtml((b && b.customer_name) || '')}</strong> — ${escapeHtml((b && b.court_name) || '')}
+                </div>
+                <div style="font-size:0.82rem; margin-top:4px; color:var(--green-dark); font-weight:600;">
+                    Tercatat masuk pada ${new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} WIB
+                </div>
+            </div>
+        </div>`;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+</script>
+
+<?php include __DIR__ . '/../includes/footer.php'; ?>

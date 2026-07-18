@@ -66,6 +66,23 @@ if ($check_users) {
     if (!in_array('reset_expired_at', $user_cols)) {
         mysqli_query($conn, "ALTER TABLE users ADD COLUMN reset_expired_at DATETIME NULL AFTER reset_token");
     }
+    if (!in_array('username', $user_cols)) {
+        mysqli_query($conn, "ALTER TABLE users ADD COLUMN username VARCHAR(150) NULL UNIQUE AFTER email");
+    }
+    if (!in_array('last_login', $user_cols)) {
+        mysqli_query($conn, "ALTER TABLE users ADD COLUMN last_login DATETIME NULL AFTER reset_expired_at");
+    }
+    if (!in_array('updated_at', $user_cols)) {
+        mysqli_query($conn, "ALTER TABLE users ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER last_login");
+    }
+    if (!in_array('phone', $user_cols)) {
+        mysqli_query($conn, "ALTER TABLE users ADD COLUMN phone VARCHAR(20) NULL AFTER nomor_telepon");
+        mysqli_query($conn, "UPDATE users SET phone = nomor_telepon WHERE phone IS NULL AND nomor_telepon IS NOT NULL");
+    }
+    if (!in_array('full_name', $user_cols)) {
+        mysqli_query($conn, "ALTER TABLE users ADD COLUMN full_name VARCHAR(150) NULL AFTER nama_lengkap");
+        mysqli_query($conn, "UPDATE users SET full_name = nama_lengkap WHERE full_name IS NULL AND nama_lengkap IS NOT NULL");
+    }
 }
 
 // 1b. Add cancelled_at column to bookings table (for soft cancel feature)
@@ -108,6 +125,15 @@ if ($check_pay) {
     }
     if (!in_array('updated_at', $cols)) {
         mysqli_query($conn, "ALTER TABLE payments ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+    }
+    // Check if metode_bayar column definition contains 'QRIS'
+    $check_mb = mysqli_query($conn, "SHOW COLUMNS FROM payments LIKE 'metode_bayar'");
+    if ($check_mb) {
+        $row_mb = mysqli_fetch_assoc($check_mb);
+        if ($row_mb && strpos($row_mb['Type'], 'QRIS') === false) {
+            mysqli_query($conn, "UPDATE payments SET metode_bayar = 'QRIS' WHERE metode_bayar = 'Transfer'");
+            mysqli_query($conn, "ALTER TABLE payments MODIFY COLUMN metode_bayar ENUM('QRIS', 'Cash', 'Transfer') NOT NULL");
+        }
     }
 }
 
@@ -188,49 +214,134 @@ if ($check_bookings) {
 
 // ---- HELPER SINKRONISASI PEMBAYARAN DAN STATUS BOOKING ----
 if (!function_exists('updateBookingVerification')) {
-    function updateBookingVerification($conn, $booking_id, $status, $verifier_id = null, $sendEmail = true) {
-        $status = strtolower($status);
+    function updateBookingVerification($conn, $booking_id, $status, $verifier_id = null, $sendEmail = true, $metode_bayar = null, $cashier_id = null) {
+        $status = strtolower(trim($status));
         $booking_id = (int)$booking_id;
-        
-        if ($status === 'confirmed') {
-            $res = mysqli_query($conn, "SELECT booking_code FROM bookings WHERE id = $booking_id");
-            $row = mysqli_fetch_assoc($res);
-            if ($row && empty($row['booking_code'])) {
+        if ($booking_id <= 0) return false;
+
+        // Normalize status aliases
+        if (in_array($status, ['confirmed', 'terverifikasi', 'lunas'])) {
+            $normalizedStatus = 'confirmed';
+        } elseif (in_array($status, ['rejected_pending', 'gagal'])) {
+            $normalizedStatus = 'rejected_pending';
+        } elseif (in_array($status, ['cancelled', 'ditolak', 'batal'])) {
+            $normalizedStatus = 'cancelled';
+        } else {
+            $normalizedStatus = 'pending';
+        }
+
+        // Fetch current booking & payment details
+        $resB = mysqli_query($conn, "SELECT total_harga, booking_code FROM bookings WHERE id = $booking_id");
+        if (!$resB || mysqli_num_rows($resB) == 0) return false;
+        $bookingRow = mysqli_fetch_assoc($resB);
+        $total_harga = (float)$bookingRow['total_harga'];
+
+        $resP = mysqli_query($conn, "SELECT id, receipt_number, metode_bayar FROM payments WHERE booking_id = $booking_id");
+        $paymentRow = $resP ? mysqli_fetch_assoc($resP) : null;
+
+        $now = date('Y-m-d H:i:s');
+
+        if ($normalizedStatus === 'confirmed') {
+            // 1. Update Bookings table
+            $code = $bookingRow['booking_code'];
+            if (empty($code)) {
                 $code = 'BK' . strtoupper(substr(bin2hex(random_bytes(8)), 0, 14));
                 while (true) {
                     $check = mysqli_query($conn, "SELECT id FROM bookings WHERE booking_code = '$code'");
                     if (mysqli_num_rows($check) == 0) break;
                     $code = 'BK' . strtoupper(substr(bin2hex(random_bytes(8)), 0, 14));
                 }
-                $now = date('Y-m-d H:i:s');
-                $vby = $verifier_id ? (int)$verifier_id : 'NULL';
-                mysqli_query($conn, "UPDATE bookings SET 
-                    status = 'confirmed',
-                    booking_code = '$code',
-                    payment_status = 'Verified',
-                    verified_at = '$now',
-                    verified_by = $vby
-                    WHERE id = $booking_id");
-            } else {
-                mysqli_query($conn, "UPDATE bookings SET 
-                    status = 'confirmed',
-                    payment_status = 'Verified'
-                    WHERE id = $booking_id");
             }
-        } elseif ($status === 'cancelled') {
+            $vby = $verifier_id ? (int)$verifier_id : 'NULL';
+            mysqli_query($conn, "UPDATE bookings SET 
+                status = 'confirmed',
+                booking_code = '$code',
+                payment_status = 'Verified',
+                verified_at = '$now',
+                verified_by = $vby
+                WHERE id = $booking_id");
+
+            // 2. Sync Payments table
+            $metode = $metode_bayar ? mysqli_real_escape_string($conn, $metode_bayar) : ($paymentRow['metode_bayar'] ?? 'QRIS');
+            $cid = $cashier_id ? (int)$cashier_id : ($verifier_id ? (int)$verifier_id : 'NULL');
+            $rec_num = 'REC-' . date('Ymd') . '-' . sprintf('%04d', $booking_id);
+
+            if (!$paymentRow) {
+                mysqli_query($conn, "INSERT INTO payments 
+                    (booking_id, jumlah_bayar, metode_bayar, status_verifikasi, payment_status, waktu_bayar, payment_date, cashier_id, receipt_number) 
+                    VALUES 
+                    ($booking_id, $total_harga, '$metode', 'terverifikasi', 'paid', '$now', '$now', $cid, '$rec_num')");
+            } else {
+                $rec = !empty($paymentRow['receipt_number']) ? mysqli_real_escape_string($conn, $paymentRow['receipt_number']) : $rec_num;
+                mysqli_query($conn, "UPDATE payments SET 
+                    status_verifikasi = 'terverifikasi',
+                    payment_status = 'paid',
+                    waktu_bayar = IFNULL(waktu_bayar, '$now'),
+                    payment_date = IFNULL(payment_date, '$now'),
+                    metode_bayar = '$metode',
+                    cashier_id = IFNULL($cid, cashier_id),
+                    receipt_number = '$rec'
+                    WHERE booking_id = $booking_id");
+            }
+
+        } elseif ($normalizedStatus === 'rejected_pending') {
+            // 1. Update Bookings table
+            mysqli_query($conn, "UPDATE bookings SET 
+                status = 'pending',
+                payment_status = 'Rejected'
+                WHERE id = $booking_id");
+
+            // 2. Sync Payments table
+            $metode = $metode_bayar ? mysqli_real_escape_string($conn, $metode_bayar) : ($paymentRow['metode_bayar'] ?? 'QRIS');
+            if (!$paymentRow) {
+                mysqli_query($conn, "INSERT INTO payments 
+                    (booking_id, jumlah_bayar, metode_bayar, status_verifikasi, payment_status, waktu_bayar, payment_date) 
+                    VALUES 
+                    ($booking_id, $total_harga, '$metode', 'ditolak', 'unpaid', '$now', '$now')");
+            } else {
+                mysqli_query($conn, "UPDATE payments SET 
+                    status_verifikasi = 'ditolak',
+                    payment_status = 'unpaid',
+                    waktu_bayar = IFNULL(waktu_bayar, '$now'),
+                    payment_date = IFNULL(payment_date, '$now'),
+                    metode_bayar = '$metode'
+                    WHERE booking_id = $booking_id");
+            }
+
+        } elseif ($normalizedStatus === 'cancelled') {
+            // 1. Update Bookings table
             mysqli_query($conn, "UPDATE bookings SET 
                 status = 'cancelled',
                 payment_status = 'Rejected'
                 WHERE id = $booking_id");
+
+            // 2. Sync Payments table
+            if ($paymentRow) {
+                mysqli_query($conn, "UPDATE payments SET 
+                    status_verifikasi = 'ditolak',
+                    payment_status = 'unpaid'
+                    WHERE booking_id = $booking_id");
+            }
+
         } else {
+            // Pending reset
+            // 1. Update Bookings table
             mysqli_query($conn, "UPDATE bookings SET 
                 status = 'pending',
                 payment_status = 'Pending'
                 WHERE id = $booking_id");
+
+            // 2. Sync Payments table
+            if ($paymentRow) {
+                mysqli_query($conn, "UPDATE payments SET 
+                    status_verifikasi = 'menunggu',
+                    payment_status = 'unpaid'
+                    WHERE booking_id = $booking_id");
+            }
         }
 
-        // Send email notification based on status
-        if ($sendEmail && ($status === 'confirmed' || $status === 'cancelled')) {
+        // 3. Send email notification based on status
+        if ($sendEmail && ($normalizedStatus === 'confirmed' || $normalizedStatus === 'cancelled' || $normalizedStatus === 'rejected_pending')) {
             $resDetails = mysqli_query($conn, "
                 SELECT b.id, b.tanggal_booking, b.jam_mulai, b.jam_selesai, b.total_harga, b.booking_code,
                        c.nama_lapangan, u.nama_lengkap, u.email
@@ -252,10 +363,10 @@ if (!function_exists('updateBookingVerification')) {
                         'jam_selesai' => $details['jam_selesai'],
                         'total_harga' => $details['total_harga'],
                         'booking_code' => $details['booking_code'] ?? '',
-                        'reason' => $status === 'cancelled' ? 'Pembayaran ditolak atau booking dibatalkan oleh admin/petugas.' : ''
+                        'reason' => $normalizedStatus === 'rejected_pending' ? 'Simulasi pembayaran QRIS dibatalkan/gagal oleh pengguna.' : ($normalizedStatus === 'cancelled' ? 'Pembayaran ditolak atau booking dibatalkan oleh admin/petugas.' : '')
                     ];
 
-                    if ($status === 'confirmed') {
+                    if ($normalizedStatus === 'confirmed') {
                         MailHelper::send($details['email'], 'Pembayaran Terverifikasi & Booking Confirmed - PadelClub', 'payment-verified', $emailData);
                     } else {
                         MailHelper::send($details['email'], 'Booking Lapangan Dibatalkan - PadelClub', 'payment-rejected', $emailData);
@@ -263,6 +374,8 @@ if (!function_exists('updateBookingVerification')) {
                 }
             }
         }
+
+        return true;
     }
 }
 
