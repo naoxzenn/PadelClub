@@ -360,3 +360,259 @@ td {
 .dark-mode ::-webkit-scrollbar-thumb:hover {
     background: #475569;
 }
+
+/* ── Dashboard Topbar — Dark Mode ────────────────────────────────────────── */
+.dark-mode .dashboard-topbar {
+    background: rgba(27, 36, 50, 0.95) !important;
+    border-bottom: 1px solid #1F2937 !important;
+    box-shadow: 0 2px 12px -2px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark-mode .topbar-hamburger {
+    border-color: #334155 !important;
+    color: #F8FAFC !important;
+}
+.dark-mode .topbar-hamburger:hover {
+    background: rgba(14, 165, 233, 0.12) !important;
+    border-color: var(--blue) !important;
+}
+
+.dark-mode .topbar-page-title {
+    color: #94A3B8 !important;
+}
+
+/* ── Icon System — Dark Mode Overrides ──────────────────────────────────── */
+
+/* .icon-wrap base dan modifiers */
+.dark-mode .icon-wrap,
+.dark-mode .icon-wrap-sm,
+.dark-mode .icon-wrap-lg,
+.dark-mode .icon-wrap-xl {
+    background: rgba(14, 165, 233, 0.10) !important;
+}
+
+/* Color modifiers in dark mode — sedikit lebih terang untuk kontras */
+.dark-mode .icon-blue   { background: rgba(14, 165, 233, 0.15) !important; color: var(--blue) !important; }
+.dark-mode .icon-green  { background: rgba(34, 197, 94, 0.15)  !important; color: var(--green) !important; }
+.dark-mode .icon-amber  { background: rgba(245, 158, 11, 0.15) !important; color: #FBBF24 !important; }
+.dark-mode .icon-red    { background: rgba(239, 68, 68, 0.15)  !important; color: #F87171 !important; }
+.dark-mode .icon-purple { background: rgba(139, 92, 246, 0.15) !important; color: #A78BFA !important; }
+.dark-mode .icon-muted  { background: var(--surface-alt)       !important; color: #94A3B8  !important; }
+
+/* Stat card icons */
+.dark-mode .stat-card-icon {
+    background: rgba(14, 165, 233, 0.12) !important;
+}
+.dark-mode .stat-card-icon.success-icon {
+    background: rgba(34, 197, 94, 0.12) !important;
+}
+.dark-mode .stat-card-icon.warning-icon {
+    background: rgba(245, 158, 11, 0.12) !important;
+}
+
+/* Feature icon — landing page */
+.dark-mode .feature-icon {
+    background: rgba(14, 165, 233, 0.12) !important;
+}
+
+/* About page icon-badge */
+.dark-mode .icon-badge {
+    background-color: #1E293B !important;
+    color: var(--blue) !important;
+}
+.dark-mode .padel-card:hover .icon-badge {
+    background-color: var(--blue) !important;
+    color: #ffffff !important;
+}
+
+/* About page tentang-list-icon */
+.dark-mode .tentang-list-icon {
+    background-color: #1E293B !important;
+    color: var(--blue) !important;
+}
+
+/* Contact page icon */
+.dark-mode .contact-info-icon {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--green) !important;
+}
+
+/* Profile page */
+.dark-mode .profile-info-icon {
+    background: #1E293B !important;
+    color: var(--blue) !important;
+}
+
+/* Step number circles — landing page */
+.dark-mode .step-num {
+    /* gradient tetap, tidak perlu override */
+}
+
+/* Modal close button */
+.dark-mode .modal-close {
+    background: #1b2432 !important;
+    border-color: #334155 !important;
+    color: #94A3B8 !important;
+}
+.dark-mode .modal-close:hover {
+    background: #1E293B !important;
+    color: #F8FAFC !important;
+    border-color: var(--blue) !important;
+}
+
+/* Quick Action Cards — Dark Mode */
+.dark-mode .quick-action-card {
+    background: #1b2432 !important;
+    border-color: #334155 !important;
+}
+
+.dark-mode .quick-action-card:hover {
+    border-color: var(--blue) !important;
+    background: #1E293B !important;
+}
+
+.dark-mode .quick-action-body h4 {
+    color: #F8FAFC !important;
+}
+
+.dark-mode .quick-action-body p {
+    color: #94A3B8 !important;
+}
+
+.dark-mode .quick-action-footer {
+    color: var(--blue) !important;
+}
+
+/* ===================================================
+   QR SCANNER PAGE (kasir/checkin.php) — DARK MODE
+   =================================================== */
+
+.dark-mode .ci-stat-card {
+    background: #1b2432 !important;
+    border-color: #334155 !important;
+}
+
+.dark-mode .ci-stat-card .ci-stat-label {
+    color: #94A3B8 !important;
+}
+
+.dark-mode .scanner-card {
+    background: #1b2432 !important;
+    border-color: #334155 !important;
+}
+
+.dark-mode .scanner-header {
+    background: #0F172A !important;
+    color: #F8FAFC !important;
+    border-bottom: 1px solid #334155 !important;
+}
+
+.dark-mode .manual-card {
+    background: #1b2432 !important;
+    border-color: #334155 !important;
+}
+
+.dark-mode .manual-header {
+    background: #0F172A !important;
+    color: #F8FAFC !important;
+    border-bottom: 1px solid #334155 !important;
+}
+
+.dark-mode .code-input {
+    background: #0F172A !important;
+    color: #F8FAFC !important;
+    border-color: #334155 !important;
+}
+
+.dark-mode .code-input:focus {
+    border-color: var(--blue) !important;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2) !important;
+}
+
+.dark-mode .result-card {
+    background: #1b2432 !important;
+    border-color: #334155 !important;
+}
+
+.dark-mode .result-top {
+    border-bottom-color: #334155 !important;
+}
+
+.dark-mode .result-name {
+    color: #F8FAFC !important;
+}
+
+.dark-mode .result-row {
+    border-bottom-color: #334155 !important;
+}
+
+.dark-mode .result-label {
+    color: #94A3B8 !important;
+}
+
+.dark-mode .result-value {
+    color: #F8FAFC !important;
+}
+
+.dark-mode .result-actions {
+    background: #0F172A !important;
+    border-top-color: #334155 !important;
+}
+
+.dark-mode .loading-card {
+    background: #1b2432 !important;
+    border-color: #334155 !important;
+}
+
+.dark-mode .scanner-status.scanning {
+    background: rgba(14, 165, 233, 0.15) !important;
+    color: #38BDF8 !important;
+    border-color: rgba(14, 165, 233, 0.3) !important;
+}
+
+.dark-mode .scanner-status.found {
+    background: rgba(34, 197, 94, 0.15) !important;
+    color: #4ADE80 !important;
+    border-color: rgba(34, 197, 94, 0.3) !important;
+}
+
+.dark-mode .scanner-status.error {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #F87171 !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.dark-mode .badge-ci-done {
+    background: rgba(34, 197, 94, 0.18) !important;
+    color: #4ADE80 !important;
+    border-color: rgba(34, 197, 94, 0.35) !important;
+}
+
+.dark-mode .badge-ci-pending {
+    background: rgba(245, 158, 11, 0.18) !important;
+    color: #FBBF24 !important;
+    border-color: rgba(245, 158, 11, 0.35) !important;
+}
+
+.dark-mode .badge-ci-invalid {
+    background: rgba(239, 68, 68, 0.18) !important;
+    color: #F87171 !important;
+    border-color: rgba(239, 68, 68, 0.35) !important;
+}
+
+.dark-mode .result-error {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #F87171 !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.dark-mode .result-success {
+    background: rgba(34, 197, 94, 0.15) !important;
+    color: #4ADE80 !important;
+    border-color: rgba(34, 197, 94, 0.3) !important;
+}
+
+.dark-mode kbd {
+    background: #334155 !important;
+    color: #F8FAFC !important;
+}

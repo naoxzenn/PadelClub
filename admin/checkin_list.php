@@ -87,8 +87,7 @@ include_once __DIR__ . '/../includes/header.php';
         </div>
 
         <!-- Search & Filter Controls -->
-        <div class="card" style="padding: 24px; margin-bottom: 24px; border-radius: var(--radius-lg);">
-            <form method="GET" action="" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto; gap: 16px; align-items: end;">
+            <form method="GET" action="" class="admin-filters-grid">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="date_filter" style="font-size:0.7rem; font-weight:700;">Filter Tanggal</label>
                     <select id="date_filter" name="date_filter" style="padding: 10px; font-size: 0.88rem;">

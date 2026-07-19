@@ -56,7 +56,7 @@ if (isset($_SESSION['user_id'])) {
         <!-- DASHBOARD LAYOUT -->
         <div class="dashboard-container">
             <!-- Sidebar -->
-            <aside class="dashboard-sidebar">
+            <aside class="dashboard-sidebar" id="dashboard-sidebar">
                 <div class="sidebar-brand" style="padding: 20px; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px;">
                         <span class="material-symbols-outlined" style="font-size: 2.2rem; color: var(--blue);">sports_tennis</span>
@@ -223,13 +223,106 @@ if (isset($_SESSION['user_id'])) {
                 </nav>
             </aside>
 
-            <!-- Main Content Area -->
+                <!-- Main Content Area -->
             <main class="dashboard-main">
-                <!-- Floating toggle button for admin, cashier and customer mobile sidebar -->
                 <?php if ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'kasir' || $_SESSION['role'] === 'customer'): ?>
-                    <button class="sidebar-toggle floating-toggle" id="sidebar-toggle-admin" aria-label="Toggle Sidebar" style="display:none; position:fixed; top:16px; right:16px; z-index:1100; width:44px; height:44px; border-radius:50%; background:var(--navy); color:#fff; border:1px solid rgba(255,255,255,0.15); box-shadow:var(--shadow-md); align-items:center; justify-content:center; cursor:pointer;">
-                        <span class="material-symbols-outlined">menu</span>
-                    </button>
+                    <!-- ============================================================
+                         DASHBOARD TOP NAVBAR — Mobile & Tablet (≤ 992px)
+                         Berisi: Hamburger | PadelClub + Nama Halaman | Avatar User
+                         Tersembunyi di desktop (CSS: display:none, ditampilkan via @media)
+                         ============================================================ -->
+                    <header class="dashboard-topbar" id="dashboard-topbar" aria-label="Dashboard Top Navigation">
+                        <!-- Hamburger: membuka/menutup sidebar drawer -->
+                        <button class="topbar-hamburger" id="topbar-hamburger" aria-label="Buka Menu Sidebar" aria-expanded="false" aria-controls="dashboard-sidebar">
+                            <span class="material-symbols-outlined">menu</span>
+                        </button>
+
+                        <!-- Branding: PadelClub + nama halaman aktif -->
+                        <div class="topbar-brand">
+                            <span class="topbar-brand-name">PadelClub</span>
+                            <span class="topbar-page-title"><?= htmlspecialchars($pageTitle ?? 'Dashboard') ?></span>
+                        </div>
+
+                        <!-- Avatar User -->
+                        <div class="topbar-avatar" title="<?= htmlspecialchars($dispName ?? 'User') ?>" role="img" aria-label="Avatar <?= htmlspecialchars($dispName ?? 'User') ?>">
+                            <?php if (!empty($dispAvatar)): ?>
+                                <?php if (str_starts_with($dispAvatar, 'http')): ?>
+                                    <img src="<?= htmlspecialchars($dispAvatar) ?>" alt="Avatar">
+                                <?php else: ?>
+                                    <img src="<?= $baseUrl ?? '' ?>uploads/profile/<?= htmlspecialchars($dispAvatar) ?>" alt="Avatar">
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <?= strtoupper(substr($dispName ?? 'U', 0, 1)) ?>
+                            <?php endif; ?>
+                        </div>
+                    </header>
+
+                    <!-- JS: Hamburger ↔ Sidebar Toggle dengan animasi smooth -->
+                    <script>
+                    (function () {
+                        'use strict';
+
+                        var hamburger = document.getElementById('topbar-hamburger');
+                        var sidebar   = document.querySelector('.dashboard-sidebar');
+                        var container = document.querySelector('.dashboard-container');
+
+                        if (!hamburger || !sidebar) return;
+
+                        // Buka/tutup sidebar
+                        function openSidebar() {
+                            sidebar.classList.add('show');
+                            hamburger.classList.add('active');
+                            hamburger.setAttribute('aria-expanded', 'true');
+                            document.body.style.overflow = 'hidden';
+                        }
+
+                        function closeSidebar() {
+                            sidebar.classList.remove('show');
+                            hamburger.classList.remove('active');
+                            hamburger.setAttribute('aria-expanded', 'false');
+                            document.body.style.overflow = '';
+                        }
+
+                        function toggleSidebar() {
+                            if (sidebar.classList.contains('show')) {
+                                closeSidebar();
+                            } else {
+                                openSidebar();
+                            }
+                        }
+
+                        hamburger.addEventListener('click', function (e) {
+                            e.stopPropagation();
+                            toggleSidebar();
+                        });
+
+                        // Tutup sidebar saat klik backdrop (area luar sidebar)
+                        document.addEventListener('click', function (e) {
+                            if (
+                                sidebar.classList.contains('show') &&
+                                !sidebar.contains(e.target) &&
+                                !hamburger.contains(e.target)
+                            ) {
+                                closeSidebar();
+                            }
+                        });
+
+                        // Tutup sidebar dengan tombol ESC
+                        document.addEventListener('keydown', function (e) {
+                            if (e.key === 'Escape' && sidebar.classList.contains('show')) {
+                                closeSidebar();
+                                hamburger.focus();
+                            }
+                        });
+
+                        // Tutup sidebar otomatis jika window di-resize ke desktop
+                        window.addEventListener('resize', function () {
+                            if (window.innerWidth > 992 && sidebar.classList.contains('show')) {
+                                closeSidebar();
+                            }
+                        });
+                    })();
+                    </script>
                 <?php endif; ?>
 
                 <div class="dashboard-content">

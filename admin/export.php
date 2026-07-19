@@ -34,8 +34,7 @@ include __DIR__ . '/../includes/header.php';
             <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Unduh salinan data sistem PadelClub ke format Excel (.xlsx), CSV (.csv), atau dokumen PDF (.pdf) untuk keperluan pelaporan atau analisis eksternal.</p>
         </div>
 
-        <!-- Export Cards Grid -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+        <div class="dashboard-stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 24px;">
             <!-- Bookings Card -->
             <div class="card" style="padding: 32px; display: flex; flex-direction: column; height: 100%;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">

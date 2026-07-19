@@ -133,7 +133,7 @@ $qrisPayments = mysqli_fetch_all(mysqli_query($conn, "
         <!-- Statistik Grid -->
         <div class="dashboard-stat-grid">
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon success-icon">
+                <div class="stat-card-icon icon-green">
                     <span class="material-symbols-outlined">payments</span>
                 </div>
                 <div class="stat-card-info">
@@ -142,7 +142,7 @@ $qrisPayments = mysqli_fetch_all(mysqli_query($conn, "
                 </div>
             </div>
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon warning-icon">
+                <div class="stat-card-icon icon-amber">
                     <span class="material-symbols-outlined">hourglass_empty</span>
                 </div>
                 <div class="stat-card-info">
@@ -151,7 +151,7 @@ $qrisPayments = mysqli_fetch_all(mysqli_query($conn, "
                 </div>
             </div>
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon">
+                <div class="stat-card-icon icon-blue">
                     <span class="material-symbols-outlined">calendar_today</span>
                 </div>
                 <div class="stat-card-info">
@@ -432,12 +432,10 @@ $qrisPayments = mysqli_fetch_all(mysqli_query($conn, "
                     $profil_res = mysqli_stmt_get_result($stmt_prof);
                     $profil = mysqli_fetch_assoc($profil_res);
                     mysqli_stmt_close($stmt_prof);
-                } else {
-                    $profil = null;
                 }
                 ?>
                 <?php if ($profil): ?>
-                    <div style="max-width: 500px; display: grid; grid-template-columns: 150px 1fr; gap: 12px 24px; padding: 20px 0;">
+                    <div style="max-width: 500px; width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); gap: 12px 24px; padding: 20px 0;">
                         <div style="font-weight: 600; color: var(--navy); border-bottom: 1px solid var(--border); padding-bottom: 8px;">Nama Lengkap</div>
                         <div style="border-bottom: 1px solid var(--border); padding-bottom: 8px;"><?= htmlspecialchars($profil['nama_lengkap']) ?></div>
                         

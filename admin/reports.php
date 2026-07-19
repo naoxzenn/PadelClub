@@ -106,7 +106,7 @@ if ($stmt) {
         <div class="dashboard-stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px;">
             
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
+                <div class="stat-card-icon icon-blue">
                     <span class="material-symbols-outlined">calendar_month</span>
                 </div>
                 <div class="stat-card-info">
@@ -116,7 +116,7 @@ if ($stmt) {
             </div>
 
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon success-icon">
+                <div class="stat-card-icon icon-green">
                     <span class="material-symbols-outlined">check_circle</span>
                 </div>
                 <div class="stat-card-info">
@@ -126,7 +126,7 @@ if ($stmt) {
             </div>
 
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(239, 68, 68, 0.08); color: #EF4444;">
+                <div class="stat-card-icon icon-red">
                     <span class="material-symbols-outlined">cancel</span>
                 </div>
                 <div class="stat-card-info">
@@ -136,7 +136,7 @@ if ($stmt) {
             </div>
 
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon success-icon">
+                <div class="stat-card-icon icon-green">
                     <span class="material-symbols-outlined">payments</span>
                 </div>
                 <div class="stat-card-info">

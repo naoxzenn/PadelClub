@@ -212,7 +212,7 @@ function showLoading() {
     const el = document.getElementById('booking-result');
     el.style.display = 'block';
     el.innerHTML = `
-        <div style="text-align:center; padding:32px; background:var(--white); border-radius:var(--radius-md); border:1px solid var(--border);">
+        <div class="loading-card">
             <span class="material-symbols-outlined" style="font-size:2rem; color:var(--blue); animation:spin 1s linear infinite; display:block; margin-bottom:8px;">progress_activity</span>
             <span style="color:var(--text-muted); font-weight:600; font-size:0.9rem;">Mencari booking...</span>
         </div>`;

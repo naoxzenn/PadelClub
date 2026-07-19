@@ -47,7 +47,7 @@ include __DIR__ . '/../includes/header.php';
             <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Konfigurasi mekanisme pencadangan otomatis untuk meminimalisir risiko kehilangan data transaksi penting.</p>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; align-items: start;">
+        <div class="admin-grid-layout">
             <!-- Settings Form Card -->
             <div class="card" style="padding: 32px;">
                 <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--navy); margin-bottom: 20px;">Konfigurasi Jadwal</h2>

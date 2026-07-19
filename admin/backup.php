@@ -99,7 +99,7 @@ include __DIR__ . '/../includes/header.php';
 
             <!-- Total Backup -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
+                <div class="stat-card-icon icon-blue">
                     <span class="material-symbols-outlined">folder_zip</span>
                 </div>
                 <div class="stat-card-info">
@@ -110,7 +110,7 @@ include __DIR__ . '/../includes/header.php';
 
             <!-- Last Backup -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
+                <div class="stat-card-icon icon-blue">
                     <span class="material-symbols-outlined">schedule</span>
                 </div>
                 <div class="stat-card-info">
@@ -121,7 +121,7 @@ include __DIR__ . '/../includes/header.php';
 
             <!-- Total Size -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
+                <div class="stat-card-icon icon-blue">
                     <span class="material-symbols-outlined">sd_card</span>
                 </div>
                 <div class="stat-card-info">
@@ -132,7 +132,7 @@ include __DIR__ . '/../includes/header.php';
 
             <!-- Backup Today -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
+                <div class="stat-card-icon icon-blue">
                     <span class="material-symbols-outlined">today</span>
                 </div>
                 <div class="stat-card-info">
@@ -145,7 +145,7 @@ include __DIR__ . '/../includes/header.php';
         <!-- Filter & Search Panel -->
         <div class="card" style="padding: 24px; margin-bottom: 24px;">
             <form method="GET" action="backup.php" style="display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: 0;">
-                <div style="display: flex; gap: 12px; align-items: center; flex: 1; min-width: 280px;">
+                <div style="display: flex; gap: 12px; align-items: center; flex: 1; min-width: 0; width: 100%; flex-wrap: wrap;">
                     <div style="position: relative; flex: 1;">
                         <span class="material-symbols-outlined" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.2rem;">search</span>
                         <input type="text" name="search" placeholder="Cari nama file atau admin..." value="<?= htmlspecialchars($search) ?>" style="padding: 10px 16px 10px 42px; font-size: 0.88rem; margin: 0;">

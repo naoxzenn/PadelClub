@@ -163,7 +163,7 @@ while ($row = mysqli_fetch_assoc($res_pay_stats)) {
             
             <!-- Lapangan Populer -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(34, 197, 94, 0.08); color: var(--green);">
+                <div class="stat-card-icon icon-green">
                     <span class="material-symbols-outlined">star</span>
                 </div>
                 <div class="stat-card-info">
@@ -176,7 +176,7 @@ while ($row = mysqli_fetch_assoc($res_pay_stats)) {
 
             <!-- Jam Paling Ramai -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(245, 158, 11, 0.08); color: #F59E0B;">
+                <div class="stat-card-icon icon-amber">
                     <span class="material-symbols-outlined">schedule</span>
                 </div>
                 <div class="stat-card-info">
@@ -189,7 +189,7 @@ while ($row = mysqli_fetch_assoc($res_pay_stats)) {
 
             <!-- Top Customer -->
             <div class="dashboard-stat-card" style="grid-column: span 2;">
-                <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
+                <div class="stat-card-icon icon-blue">
                     <span class="material-symbols-outlined">person</span>
                 </div>
                 <div class="stat-card-info">

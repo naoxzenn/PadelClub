@@ -86,7 +86,7 @@ include __DIR__ . '/../includes/header.php';
             <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Kembalikan kondisi database PadelClub ke titik cadangan (backup) tertentu. Pastikan Anda memilih file yang benar.</p>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 2.5fr; gap: 24px; align-items: start;">
+        <div class="admin-grid-layout">
             <!-- Upload Panel -->
             <div class="card" style="padding: 28px;">
                 <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--navy); margin-bottom: 16px;">Unggah File Backup</h3>
@@ -112,7 +112,7 @@ include __DIR__ . '/../includes/header.php';
                     <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;"><?= count($backups) ?> File Ditemukan</span>
                 </div>
                 
-                <div style="overflow-x: auto;">
+                <div class="table-responsive">
                     <table style="width: 100%; border-collapse: collapse; text-align: left; margin: 0;">
                         <thead>
                             <tr style="background: var(--surface-alt);">

@@ -30,16 +30,33 @@
     --shadow-md: 0 16px 40px -10px rgba(15, 23, 42, .12);
     --shadow-glow: 0 10px 25px -5px rgba(14, 165, 233, .35);
 
+    /* Icon system sizes — gunakan token ini di semua icon container */
+    --icon-xs:  32px;   /* icon kecil: badge, inline */
+    --icon-sm:  40px;   /* icon sedang: profil row, sidebar */
+    --icon-md:  48px;   /* icon standar: stat card, step */
+    --icon-lg:  56px;   /* icon besar: about card, feature */
+    --icon-xl:  72px;   /* icon hero */
+
+    /* Icon font sizes — proporsional terhadap container */
+    --icon-font-xs:  1.1rem;
+    --icon-font-sm:  1.25rem;
+    --icon-font-md:  1.5rem;
+    --icon-font-lg:  1.75rem;
+    --icon-font-xl:  2.25rem;
+
     --nav-height: 76px;
 }
 
 /* ---------- Reset / Base ---------- */
-* {
+*, *::before, *::after {
     box-sizing: border-box;
 }
 
 html {
     scroll-behavior: smooth;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
 }
 
 body {
@@ -49,6 +66,10 @@ body {
     color: var(--text);
     line-height: 1.55;
     -webkit-font-smoothing: antialiased;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+    position: relative;
 }
 
 a {
@@ -62,9 +83,16 @@ ul {
     padding: 0;
 }
 
-img {
+img, svg, canvas, iframe, video {
     max-width: 100%;
-    display: block;
+    height: auto;
+}
+
+pre, code {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 button,
@@ -84,10 +112,115 @@ p {
     margin: 0;
 }
 
+/*
+ * ===================================================
+ *  ICON SYSTEM — Base & Container Classes
+ *  Semua icon di project HARUS menggunakan class ini
+ *  atau turunannya. JANGAN tambah inline style icon.
+ * ===================================================
+ *
+ * Hirarki class:
+ *   .ic               — icon font base (bukan container)
+ *   .icon-wrap        — container simetris, flex-center, border-radius-md
+ *   .icon-wrap-sm     — ukuran --icon-sm (40px)
+ *   .icon-wrap-md     — ukuran --icon-md (48px)  [default]
+ *   .icon-wrap-lg     — ukuran --icon-lg (56px)
+ *   .icon-wrap-circle — border-radius penuh (pill)
+ *
+ *   Warna container (modifier):
+ *   .icon-blue  .icon-green  .icon-amber  .icon-red  .icon-purple  .icon-muted
+ */
+
+/* ---- Base icon font — perbaikan utama: tidak ada vertical-align offset ---- */
 .material-symbols-outlined {
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    vertical-align: middle;
+    /* FIX: line-height 1 menghilangkan descender-space yang menyebabkan icon
+       tidak benar-benar center di dalam container flex */
+    line-height: 1;
+    /* FIX: display block menghilangkan inline whitespace baseline issue */
+    display: block;
+    /* FIX: tidak pakai vertical-align karena kita pakai flex untuk centering */
+    vertical-align: unset;
+    /* Mencegah shrink di dalam flex container */
+    flex-shrink: 0;
 }
+
+/* ---- Icon Container — Base ---- */
+/*
+ * .icon-wrap adalah building block universal.
+ * Semua varian lain inherit dari ini.
+ * Ukuran default: --icon-md (48px).
+ */
+.icon-wrap {
+    /* Layout */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* Ukuran: persegi simetris, tidak boleh terdistorsi */
+    width: var(--icon-md);
+    height: var(--icon-md);
+    min-width: var(--icon-md);
+    min-height: var(--icon-md);
+    aspect-ratio: 1 / 1;
+    /* Mencegah container terkompres di dalam flex/grid */
+    flex-shrink: 0;
+    /* Radius & overflow */
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    /* Box model — pastikan border tidak mempengaruhi ukuran */
+    box-sizing: border-box;
+    /* Default colors */
+    background: rgba(14, 165, 233, 0.08);
+    color: var(--blue);
+    /* Transition untuk hover */
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+/* ---- Size modifiers ---- */
+.icon-wrap-xs {
+    width: var(--icon-xs);
+    height: var(--icon-xs);
+    min-width: var(--icon-xs);
+    min-height: var(--icon-xs);
+    border-radius: var(--radius-sm);
+}
+
+.icon-wrap-sm {
+    width: var(--icon-sm);
+    height: var(--icon-sm);
+    min-width: var(--icon-sm);
+    min-height: var(--icon-sm);
+    border-radius: var(--radius-sm);
+}
+
+.icon-wrap-lg {
+    width: var(--icon-lg);
+    height: var(--icon-lg);
+    min-width: var(--icon-lg);
+    min-height: var(--icon-lg);
+    border-radius: var(--radius-md);
+}
+
+.icon-wrap-xl {
+    width: var(--icon-xl);
+    height: var(--icon-xl);
+    min-width: var(--icon-xl);
+    min-height: var(--icon-xl);
+    border-radius: var(--radius-lg);
+}
+
+/* ---- Shape modifier ---- */
+.icon-wrap-circle {
+    border-radius: var(--radius-full) !important;
+}
+
+/* ---- Color modifiers ---- */
+.icon-blue   { background: rgba(14, 165, 233, 0.10); color: var(--blue); }
+.icon-green  { background: rgba(34, 197, 94, 0.10);  color: var(--green); }
+.icon-amber  { background: rgba(245, 158, 11, 0.10); color: #F59E0B; }
+.icon-red    { background: rgba(239, 68, 68, 0.10);  color: #EF4444; }
+.icon-purple { background: rgba(139, 92, 246, 0.10); color: #8B5CF6; }
+.icon-muted  { background: var(--surface-alt); color: var(--text-muted); }
 
 /* ---------- Layout helpers ---------- */
 .container {
@@ -450,16 +583,25 @@ textarea:focus {
 
 /* ---------- Tables ---------- */
 .table-responsive {
+    width: 100%;
+    max-width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
+    box-sizing: border-box;
+}
+
+.table-responsive table {
+    min-width: 600px;
+    width: 100%;
 }
 
 table {
     width: 100%;
+    max-width: 100%;
     border-collapse: collapse;
     font-size: .88rem;
-    min-width: 640px;
 }
 
 thead {
@@ -713,16 +855,24 @@ tbody tr:hover {
 }
 
 .feature-icon {
-    width: 52px;
-    height: 52px;
-    border-radius: var(--radius-md);
-    background: rgba(14, 165, 233, .1);
-    color: var(--blue);
-    display: flex;
+    /* Standarisasi ke --icon-lg (56px) — icon besar landing page */
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    width: var(--icon-lg);
+    height: var(--icon-lg);
+    min-width: var(--icon-lg);
+    min-height: var(--icon-lg);
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    background: rgba(14, 165, 233, 0.10);
+    color: var(--blue);
+    /* font-size diset di sini karena .feature-icon adalah text wrapper, bukan flex container anak */
+    font-size: var(--icon-font-lg);
     margin-bottom: 18px;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .feature-card h3 {
@@ -746,16 +896,23 @@ tbody tr:hover {
 }
 
 .step-num {
-    width: 48px;
-    height: 48px;
+    /* Standarisasi ke --icon-md (48px), simetris */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--icon-md);
+    height: var(--icon-md);
+    min-width: var(--icon-md);
+    min-height: var(--icon-md);
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
     margin: 0 auto 14px;
     border-radius: var(--radius-full);
     background: var(--gradient);
     color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     font-weight: 800;
+    font-size: 1rem;
+    box-sizing: border-box;
 }
 
 .steps-grid strong {
@@ -856,24 +1013,34 @@ tbody tr:hover {
 }
 
 .modal-close {
+    /* FIX: simetris dengan aspect-ratio, icon tidak terpotong */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 36px;
     height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    padding: 0;
     border-radius: var(--radius-full);
     border: 1px solid var(--border);
     background: var(--card-bg);
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     color: var(--text-muted);
-    transition: background .2s, color .2s;
-    font-size: 1.1rem;
+    transition: background .2s ease, color .2s ease, border-color .2s ease;
+    /* font-size untuk icon font di dalam tombol */
+    font-size: var(--icon-font-sm);
     line-height: 1;
+    overflow: hidden;
 }
 
 .modal-close:hover {
     background: var(--surface-alt);
     color: var(--navy);
+    border-color: var(--border);
 }
 
 .modal-body {
@@ -1287,14 +1454,22 @@ tbody tr:hover {
 }
 
 .stat-card-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-md);
-    background: rgba(59, 130, 246, 0.08);
-    color: var(--blue);
-    display: flex;
+    /* FIX: tambah min-width/min-height/flex-shrink/aspect-ratio agar tidak terdistorsi di grid */
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: var(--icon-md);
+    height: var(--icon-md);
+    min-width: var(--icon-md);
+    min-height: var(--icon-md);
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    border-radius: var(--radius-md);
+    /* Default: biru (dapat di-override oleh inline style untuk variasi warna) */
+    background: rgba(14, 165, 233, 0.08);
+    color: var(--blue);
+    overflow: hidden;
 }
 
 .stat-card-icon.success-icon {
@@ -1307,8 +1482,11 @@ tbody tr:hover {
     color: #F59E0B;
 }
 
+/* Icon font size di dalam stat card — tidak perlu override .material-symbols-outlined
+   karena ukuran icon dikontrol oleh font-size pada parent (stat-card-icon) */
 .stat-card-icon .material-symbols-outlined {
-    font-size: 1.75rem;
+    font-size: var(--icon-font-lg);
+    line-height: 1;
 }
 
 .stat-card-info {
@@ -2097,16 +2275,22 @@ tbody tr:hover {
 }
 
 .tentang-list-icon {
-    display: flex;
+    /* Standarisasi ke --icon-sm (40px) — icon sedang untuk list items */
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    width: 44px;
-    height: 44px;
+    width: var(--icon-sm);
+    height: var(--icon-sm);
+    min-width: var(--icon-sm);
+    min-height: var(--icon-sm);
+    aspect-ratio: 1 / 1;
+    box-sizing: border-box;
     border-radius: var(--radius-sm);
     background-color: var(--surface-alt);
     color: var(--blue);
-    font-size: 1.25rem;
+    font-size: var(--icon-font-sm);
+    overflow: hidden;
 }
 
 .tentang-list-text h4 {
@@ -2162,17 +2346,26 @@ tbody tr:hover {
 }
 
 .icon-badge {
+    /* Standarisasi ke --icon-lg (56px) — icon besar untuk about cards */
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 56px;
-    height: 56px;
+    width: var(--icon-lg);
+    height: var(--icon-lg);
+    min-width: var(--icon-lg);
+    min-height: var(--icon-lg);
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+    box-sizing: border-box;
     border-radius: var(--radius-md);
     background-color: var(--surface-alt);
     color: var(--blue);
-    font-size: 1.6rem;
+    font-size: var(--icon-font-lg);
     margin-bottom: 20px;
-    transition: transform 0.3s ease, background-color 0.3s, color 0.3s;
+    overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                background-color 0.25s ease,
+                color 0.25s ease;
 }
 
 .padel-card:hover .icon-badge {
@@ -2396,15 +2589,22 @@ tbody tr:hover {
 }
 
 .contact-info-icon {
-    width: 44px;
-    height: 44px;
-    flex-shrink: 0;
-    border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, .1);
-    display: flex;
+    /* Standarisasi ke --icon-sm (40px) — icon dalam daftar kontak */
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: var(--icon-sm);
+    height: var(--icon-sm);
+    min-width: var(--icon-sm);
+    min-height: var(--icon-sm);
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.12);
     color: var(--green);
+    font-size: var(--icon-font-sm);
+    overflow: hidden;
 }
 
 .contact-info-item strong {
@@ -2617,13 +2817,13 @@ textarea.invalid {
 
 .admin-grid-activities {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
     gap: 24px;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 992px) {
     .admin-grid-activities {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 }
 
@@ -2635,20 +2835,28 @@ textarea.invalid {
 
 @media (max-width: 992px) {
     .admin-grid-charts-2col {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 }
 
 /* Home hero stats adjustments */
-@media (max-width: 480px) {
+@media (max-width: 576px) {
     .hero-stats {
         grid-template-columns: 1fr !important;
     }
 }
 
 /* Featured Court Grid fix for mobile portrait */
-.court-grid-img {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+.court-grid-img,
+.court-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+
+@media (max-width: 576px) {
+    .court-grid-img,
+    .court-grid {
+        grid-template-columns: 1fr !important;
+    }
 }
 
 /* Admin search filter responsive stack */
@@ -3241,15 +3449,22 @@ textarea.invalid {
 }
 
 .profile-info-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: var(--surface-alt);
-    color: var(--blue);
-    display: flex;
+    /* FIX: ganti hardcode 10px ke token --radius-sm, tambah min/aspect */
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
+    width: var(--icon-sm);
+    height: var(--icon-sm);
+    min-width: var(--icon-sm);
+    min-height: var(--icon-sm);
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    border-radius: var(--radius-sm);
+    background: var(--surface-alt);
+    color: var(--blue);
+    font-size: var(--icon-font-sm);
+    overflow: hidden;
 }
 
 .profile-info-detail {
@@ -3560,7 +3775,7 @@ textarea.invalid {
 
 /* Scanner Card */
 .scanner-card {
-    background: var(--white);
+    background: var(--card-bg);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border);
@@ -3582,24 +3797,54 @@ textarea.invalid {
     padding: 24px;
 }
 
+/* Responsive Scanner Container & Video Fit */
 #qr-reader {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    aspect-ratio: 1 / 1;
     border-radius: var(--radius-md);
     overflow: hidden;
     border: 2px solid var(--border);
     background: #000;
-    min-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
 }
 
-/* Override html5-qrcode default styles */
+/* Override html5-qrcode video element styles to fill container cleanly */
 #qr-reader img {
     display: none !important;
 }
 
-#qr-reader__scan_region {
-    border-radius: var(--radius-md);
+#qr-reader video,
+#qr-reader__scan_region video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+    border-radius: var(--radius-md) !important;
 }
 
-#qr-reader__dashboard_section_csr button {
+#qr-reader__scan_region {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    overflow: hidden !important;
+    border-radius: var(--radius-md) !important;
+}
+
+#qr-reader__scan_region canvas {
+    display: none !important;
+}
+
+#qr-reader__dashboard_section_csr button,
+#qr-reader__camera_permission_button {
     background: var(--blue) !important;
     color: #fff !important;
     border: none !important;
@@ -3608,11 +3853,6 @@ textarea.invalid {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     font-weight: 600 !important;
     cursor: pointer !important;
-}
-
-#qr-reader__camera_permission_button {
-    background: var(--blue) !important;
-    color: #fff !important;
 }
 
 .scanner-status {
@@ -3650,7 +3890,7 @@ textarea.invalid {
 
 /* Manual Input Card */
 .manual-card {
-    background: var(--white);
+    background: var(--card-bg);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border);
@@ -3723,7 +3963,16 @@ textarea.invalid {
     display: none;
 }
 
+.loading-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 32px;
+    text-align: center;
+}
+
 .result-card {
+    background: var(--card-bg);
     border-radius: var(--radius-md);
     border: 2px solid var(--border);
     overflow: hidden;
@@ -3879,7 +4128,7 @@ textarea.invalid {
 }
 
 .ci-stat-card {
-    background: var(--white);
+    background: var(--card-bg);
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
     padding: 18px 16px;
@@ -4144,4 +4393,299 @@ textarea.invalid {
         width: 100%;
         justify-content: center;
     }
+}
+
+/* ===================================================
+   DASHBOARD TOP NAVBAR (Mobile & Tablet — Admin/Kasir/Customer)
+   Muncul HANYA di layar ≤ 992px, tersembunyi di desktop
+   =================================================== */
+
+.dashboard-topbar {
+    display: none; /* hidden by default — shown via media query on mobile/tablet */
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    height: 60px;
+    background: var(--card-bg, #fff);
+    border-bottom: 1px solid var(--border, #e5e7eb);
+    box-shadow: 0 2px 12px -2px rgba(15, 23, 42, 0.08);
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    gap: 12px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* Hamburger button inside topbar */
+.topbar-hamburger {
+    /* Menggunakan pola icon system: simetris, tidak terdistorsi */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--icon-sm);
+    height: var(--icon-sm);
+    min-width: var(--icon-sm);
+    min-height: var(--icon-sm);
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    padding: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--navy);
+    cursor: pointer;
+    overflow: hidden;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.topbar-hamburger:hover {
+    background: rgba(14, 165, 233, 0.08);
+    border-color: var(--blue);
+    color: var(--blue);
+}
+.topbar-hamburger .material-symbols-outlined {
+    font-size: var(--icon-font-sm);
+    /* Override theme.css transition untuk hanya animate transform */
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.topbar-hamburger.active .material-symbols-outlined {
+    transform: rotate(90deg);
+}
+
+/* Branding section (logo + page title) */
+.topbar-brand {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    gap: 0;
+    overflow: hidden;
+}
+.topbar-brand-name {
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1.1;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.topbar-page-title {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+/* Avatar in topbar */
+.topbar-avatar {
+    /* Simetris, tidak terdistorsi */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    padding: 0;
+    border-radius: var(--radius-full);
+    background: var(--gradient);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 800;
+    border: 2px solid rgba(14, 165, 233, 0.2);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.topbar-avatar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25);
+}
+.topbar-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Show topbar only on tablet / mobile */
+@media (max-width: 992px) {
+    .dashboard-topbar {
+        display: flex;
+    }
+
+    /* Remove padding-top hack (floating button no longer needed) */
+    .dashboard-main:has(.floating-toggle) .dashboard-content {
+        padding-top: 20px !important;
+    }
+
+    /* Give content breathing room below topbar */
+    .dashboard-content {
+        padding: 20px !important;
+    }
+}
+
+/* Hide legacy floating toggle button completely — replaced by topbar hamburger */
+@media (max-width: 992px) {
+    .floating-toggle {
+        display: none !important;
+    }
+}
+
+/* ===================================================
+   SECTION HEADER FLEX & STATUS KEHADIRAN GRID
+   =================================================== */
+
+.section-header-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 576px) {
+    .section-header-flex {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+
+.status-kehadiran-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 992px) {
+    .status-kehadiran-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .status-kehadiran-grid {
+        grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+        gap: 12px;
+    }
+}
+
+/* ===================================================
+   AKTIVITAS CEPAT (QUICK ACTIONS) GRID & CARDS
+   =================================================== */
+
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+}
+
+@media (max-width: 992px) {
+    .quick-actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .quick-actions-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px;
+    }
+}
+
+.quick-action-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 16px;
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-action-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--blue);
+}
+
+.quick-action-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.quick-action-icon {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    aspect-ratio: 1 / 1;
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.quick-action-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.quick-action-body h4 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin: 0 0 6px 0;
+    line-height: 1.25;
+}
+
+.quick-action-body p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.quick-action-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--blue);
+    margin-top: 4px;
+    transition: gap 0.2s ease, color 0.2s ease;
+}
+
+.quick-action-card:hover .quick-action-footer {
+    gap: 10px;
+    color: var(--blue-dark);
 }

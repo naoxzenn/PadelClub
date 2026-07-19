@@ -44,6 +44,9 @@ $pendapatanBulanIni = (float)mysqli_fetch_row(mysqli_query($conn,
 // Booking Pending
 $bookingPending = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE status = 'pending'"))[0];
 
+// Pembayaran Menunggu Verifikasi (Tindakan Admin)
+$pembayaranPending = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM payments WHERE status_verifikasi = 'menunggu'"))[0];
+
 // Booking Confirmed
 $bookingConfirmed = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE status = 'confirmed'"))[0];
 
@@ -56,30 +59,6 @@ $checkinTotal   = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FRO
 $checkinHadir   = (int)mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bookings WHERE status = 'confirmed' AND tanggal_booking = '$todayDate' AND checkin_status = 'Checked In'"))[0];
 $checkinBelum   = $checkinTotal - $checkinHadir;
 $checkinRate    = $checkinTotal > 0 ? round(($checkinHadir / $checkinTotal) * 100) : 0;
-
-
-// ---- AMBIL DATA RINGKASAN ----
-// 5 Booking Terbaru
-$recentBookings = mysqli_fetch_all(mysqli_query($conn, "
-    SELECT b.*, c.nama_lapangan, u.nama_lengkap, u.email
-    FROM bookings b
-    JOIN courts c ON b.court_id = c.id
-    JOIN users u ON b.user_id = u.id
-    ORDER BY b.created_at DESC
-    LIMIT 5
-"), MYSQLI_ASSOC);
-
-// 5 Pembayaran Menunggu Verifikasi
-$recentPayments = mysqli_fetch_all(mysqli_query($conn, "
-    SELECT p.*, u.nama_lengkap, c.nama_lapangan, b.tanggal_booking
-    FROM payments p
-    JOIN bookings b ON p.booking_id = b.id
-    JOIN users u ON b.user_id = u.id
-    JOIN courts c ON b.court_id = c.id
-    WHERE p.status_verifikasi = 'menunggu'
-    ORDER BY COALESCE(p.waktu_bayar, p.payment_date) DESC
-    LIMIT 5
-"), MYSQLI_ASSOC);
 ?>
 <?php include __DIR__ . '/../includes/header.php'; ?>
 
@@ -95,7 +74,7 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
         <div class="dashboard-stat-grid">
             <!-- Total Booking -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
+                <div class="stat-card-icon icon-blue">
                     <span class="material-symbols-outlined">calendar_month</span>
                 </div>
                 <div class="stat-card-info">
@@ -106,7 +85,7 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
 
             <!-- Booking Hari Ini -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
+                <div class="stat-card-icon icon-blue">
                     <span class="material-symbols-outlined">today</span>
                 </div>
                 <div class="stat-card-info">
@@ -117,7 +96,7 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
 
             <!-- Booking Bulan Ini -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
+                <div class="stat-card-icon icon-blue">
                     <span class="material-symbols-outlined">date_range</span>
                 </div>
                 <div class="stat-card-info">
@@ -128,7 +107,7 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
 
             <!-- Total Customers -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(59, 130, 246, 0.08); color: #3B82F6;">
+                <div class="stat-card-icon icon-blue">
                     <span class="material-symbols-outlined">groups</span>
                 </div>
                 <div class="stat-card-info">
@@ -139,7 +118,7 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
 
             <!-- Total Lapangan -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(34, 197, 94, 0.08); color: var(--green);">
+                <div class="stat-card-icon icon-green">
                     <span class="material-symbols-outlined">sports_tennis</span>
                 </div>
                 <div class="stat-card-info">
@@ -150,7 +129,7 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
 
             <!-- Pendapatan Hari Ini -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(34, 197, 94, 0.08); color: var(--green);">
+                <div class="stat-card-icon icon-green">
                     <span class="material-symbols-outlined">payments</span>
                 </div>
                 <div class="stat-card-info">
@@ -161,7 +140,7 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
 
             <!-- Pendapatan Bulan Ini -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(34, 197, 94, 0.08); color: var(--green);">
+                <div class="stat-card-icon icon-green">
                     <span class="material-symbols-outlined">account_balance_wallet</span>
                 </div>
                 <div class="stat-card-info">
@@ -170,20 +149,20 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
                 </div>
             </div>
 
-            <!-- Booking Pending -->
+            <!-- Pembayaran (Perubahan 2: Menunggu Verifikasi -> Pembayaran) -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(245, 158, 11, 0.08); color: #F59E0B;">
-                    <span class="material-symbols-outlined">hourglass_empty</span>
+                <div class="stat-card-icon icon-amber">
+                    <span class="material-symbols-outlined">payments</span>
                 </div>
                 <div class="stat-card-info">
-                    <span class="stat-card-value"><?= $bookingPending ?></span>
-                    <span class="stat-card-label">Booking Pending</span>
+                    <span class="stat-card-value"><?= $pembayaranPending ?></span>
+                    <span class="stat-card-label">Pembayaran</span>
                 </div>
             </div>
 
             <!-- Booking Confirmed -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(34, 197, 94, 0.08); color: var(--green);">
+                <div class="stat-card-icon icon-green">
                     <span class="material-symbols-outlined">check_circle</span>
                 </div>
                 <div class="stat-card-info">
@@ -194,7 +173,7 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
 
             <!-- Booking Cancelled -->
             <div class="dashboard-stat-card">
-                <div class="stat-card-icon" style="background: rgba(239, 68, 68, 0.08); color: #EF4444;">
+                <div class="stat-card-icon icon-red">
                     <span class="material-symbols-outlined">cancel</span>
                 </div>
                 <div class="stat-card-info">
@@ -205,19 +184,19 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
         </div>
 
         <!-- Check-in Stats Hari Ini -->
-        <div style="margin-bottom: 24px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                <h3 style="font-size: 1rem; font-weight: 800; color: var(--navy); display:flex; align-items:center; gap:8px;">
+        <div style="margin-bottom: 28px;">
+            <div class="section-header-flex">
+                <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--navy); display:flex; align-items:center; gap:8px; margin:0;">
                     <span class="material-symbols-outlined" style="color: var(--blue); font-size: 1.2rem;">qr_code_scanner</span>
                     Status Kehadiran Hari Ini
                 </h3>
-                <a href="checkin_list.php" style="font-size: 0.82rem; font-weight: 700; color: var(--blue); display: inline-flex; align-items: center; gap: 4px;">
+                <a href="checkin_list.php" style="font-size: 0.85rem; font-weight: 700; color: var(--blue); display: inline-flex; align-items: center; gap: 4px; text-decoration: none;">
                     Lihat Semua <span class="material-symbols-outlined" style="font-size:1rem;">arrow_forward</span>
                 </a>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+            <div class="status-kehadiran-grid">
                 <div class="dashboard-stat-card" style="border-left: 3px solid var(--blue);">
-                    <div class="stat-card-icon" style="background: rgba(14,165,233,0.08); color: var(--blue);">
+                    <div class="stat-card-icon icon-blue">
                         <span class="material-symbols-outlined">today</span>
                     </div>
                     <div class="stat-card-info">
@@ -226,7 +205,7 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
                     </div>
                 </div>
                 <div class="dashboard-stat-card" style="border-left: 3px solid var(--green);">
-                    <div class="stat-card-icon" style="background: rgba(34,197,94,0.08); color: var(--green);">
+                    <div class="stat-card-icon icon-green">
                         <span class="material-symbols-outlined">how_to_reg</span>
                     </div>
                     <div class="stat-card-info">
@@ -235,7 +214,7 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
                     </div>
                 </div>
                 <div class="dashboard-stat-card" style="border-left: 3px solid #F59E0B;">
-                    <div class="stat-card-icon" style="background: rgba(245,158,11,0.08); color: #F59E0B;">
+                    <div class="stat-card-icon icon-amber">
                         <span class="material-symbols-outlined">pending_actions</span>
                     </div>
                     <div class="stat-card-info">
@@ -244,7 +223,7 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
                     </div>
                 </div>
                 <div class="dashboard-stat-card" style="border-left: 3px solid var(--blue-dark);">
-                    <div class="stat-card-icon" style="background: rgba(14,165,233,0.08); color: var(--blue-dark);">
+                    <div class="stat-card-icon icon-blue">
                         <span class="material-symbols-outlined">percent</span>
                     </div>
                     <div class="stat-card-info">
@@ -263,7 +242,7 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
             <div class="dashboard-stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
                 <!-- Backup Terakhir -->
                 <div class="dashboard-stat-card">
-                    <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
+                    <div class="stat-card-icon icon-blue">
                         <span class="material-symbols-outlined">schedule</span>
                     </div>
                     <div class="stat-card-info">
@@ -272,7 +251,7 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
                     </div>
                 </div>
 
-                <!-- Status Backup -->
+                <!-- Status Backup — dynamic color dari PHP, tetap inline -->
                 <?php
                 $healthColor = 'var(--green)';
                 $healthLabel = 'Sehat (Aktif)';
@@ -299,7 +278,7 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
 
                 <!-- Jumlah Backup -->
                 <div class="dashboard-stat-card">
-                    <div class="stat-card-icon" style="background: rgba(14, 165, 233, 0.08); color: var(--blue);">
+                    <div class="stat-card-icon icon-blue">
                         <span class="material-symbols-outlined">folder_zip</span>
                     </div>
                     <div class="stat-card-info">
@@ -310,95 +289,101 @@ $recentPayments = mysqli_fetch_all(mysqli_query($conn, "
             </div>
         </div>
 
-        <!-- Recent Activities Grid -->
-        <div class="admin-grid-activities">
+        <!-- Section: AKTIVITAS CEPAT (Perubahan 3 & Perubahan 1) -->
+        <div style="margin-bottom: 32px;">
+            <div class="section-header-flex">
+                <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--navy); display:flex; align-items:center; gap:8px; margin:0;">
+                    <span class="material-symbols-outlined" style="color: var(--blue); font-size: 1.3rem;">bolt</span>
+                    Aktivitas Cepat
+                </h3>
+            </div>
             
-            <!-- Recent Bookings Table -->
-            <div class="card" style="margin: 0; padding: 24px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                    <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--navy); margin:0;">5 Booking Terbaru</h2>
-                    <a href="bookings.php" style="font-size:0.85rem; color:var(--blue); font-weight:600; text-decoration:none; display:flex; align-items:center; gap:4px;">
-                        Lihat Semua <span class="material-symbols-outlined" style="font-size:1.1rem;">arrow_forward</span>
-                    </a>
-                </div>
-                <div class="table-responsive">
-                    <table style="font-size: 0.82rem; min-width:unset; width:100%;">
-                        <thead>
-                            <tr>
-                                <th>#ID</th>
-                                <th>Customer</th>
-                                <th>Lapangan</th>
-                                <th>Tanggal</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($recentBookings as $b): ?>
-                                <tr>
-                                    <td>#<?= $b['id'] ?></td>
-                                    <td>
-                                        <strong><?= htmlspecialchars($b['nama_lengkap']) ?></strong>
-                                    </td>
-                                    <td><?= htmlspecialchars($b['nama_lapangan']) ?></td>
-                                    <td><?= date('d/m/Y', strtotime($b['tanggal_booking'])) ?></td>
-                                    <td>
-                                        <?php if ($b['status'] === 'cancelled'): ?>
-                                            <span class="status-cancelled" style="padding:2px 8px; font-size:.7rem;">Dibatalkan</span>
-                                        <?php elseif ($b['status'] === 'confirmed'): ?>
-                                            <span class="status-confirmed" style="padding:2px 8px; font-size:.7rem;">Confirmed</span>
-                                        <?php else: ?>
-                                            <span class="status-pending" style="padding:2px 8px; font-size:.7rem;">Pending</span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                            <?php if (empty($recentBookings)): ?>
-                                <tr><td colspan="5" style="text-align:center; color:#aaa; padding:12px;">Belum ada booking terbaru.</td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            <div class="quick-actions-grid">
+                <!-- 1. Lihat Semua Booking (Perubahan 1) -->
+                <a href="bookings.php" class="quick-action-card">
+                    <div class="quick-action-top">
+                        <div class="quick-action-icon icon-blue">
+                            <span class="material-symbols-outlined">calendar_month</span>
+                        </div>
+                        <div class="quick-action-body">
+                            <h4>Lihat Booking</h4>
+                            <p>Kelola seluruh data booking pelanggan.</p>
+                        </div>
+                    </div>
+                    <div class="quick-action-footer">
+                        <span>Lihat Semua Booking</span>
+                        <span class="material-symbols-outlined" style="font-size: 1.1rem;">arrow_forward</span>
+                    </div>
+                </a>
 
-            <!-- Pending Payments Table -->
-            <div class="card" style="margin: 0; padding: 24px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                    <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--navy); margin:0;">Menunggu Verifikasi Pembayaran</h2>
-                    <a href="payments.php" style="font-size:0.85rem; color:var(--blue); font-weight:600; text-decoration:none; display:flex; align-items:center; gap:4px;">
-                        Lihat Semua <span class="material-symbols-outlined" style="font-size:1.1rem;">arrow_forward</span>
-                    </a>
-                </div>
-                <div class="table-responsive">
-                    <table style="font-size: 0.82rem; min-width:unset; width:100%;">
-                        <thead>
-                            <tr>
-                                <th>Booking #</th>
-                                <th>Customer</th>
-                                <th>Lapangan</th>
-                                <th>Jumlah</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($recentPayments as $p): ?>
-                                <tr>
-                                    <td>#<?= $p['booking_id'] ?></td>
-                                    <td><strong><?= htmlspecialchars($p['nama_lengkap']) ?></strong></td>
-                                    <td><?= htmlspecialchars($p['nama_lapangan']) ?></td>
-                                    <td>Rp <?= number_format($p['jumlah_bayar'], 0, ',', '.') ?></td>
-                                    <td>
-                                        <a href="payments.php" class="btn btn-sm btn-primary" style="padding: 4px 10px; font-size: 0.72rem; border-radius: 6px;">Verifikasi</a>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                            <?php if (empty($recentPayments)): ?>
-                                <tr><td colspan="5" style="text-align:center; color:#aaa; padding:12px;">Semua pembayaran terverifikasi.</td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                <!-- 2. Lihat Semua Pembayaran -->
+                <a href="payments.php" class="quick-action-card">
+                    <div class="quick-action-top">
+                        <div class="quick-action-icon icon-green">
+                            <span class="material-symbols-outlined">payments</span>
+                        </div>
+                        <div class="quick-action-body">
+                            <h4>Lihat Semua Pembayaran</h4>
+                            <p>Verifikasi bukti bayar & histori transaksi masuk.</p>
+                        </div>
+                    </div>
+                    <div class="quick-action-footer">
+                        <span>Kelola Pembayaran</span>
+                        <span class="material-symbols-outlined" style="font-size: 1.1rem;">arrow_forward</span>
+                    </div>
+                </a>
 
+                <!-- 3. Kelola Lapangan -->
+                <a href="courts.php" class="quick-action-card">
+                    <div class="quick-action-top">
+                        <div class="quick-action-icon icon-purple">
+                            <span class="material-symbols-outlined">sports_tennis</span>
+                        </div>
+                        <div class="quick-action-body">
+                            <h4>Kelola Lapangan</h4>
+                            <p>Atur daftar lapangan, harga sewa, & fasilitas.</p>
+                        </div>
+                    </div>
+                    <div class="quick-action-footer">
+                        <span>Atur Lapangan</span>
+                        <span class="material-symbols-outlined" style="font-size: 1.1rem;">arrow_forward</span>
+                    </div>
+                </a>
+
+                <!-- 4. Laporan -->
+                <a href="reports.php" class="quick-action-card">
+                    <div class="quick-action-top">
+                        <div class="quick-action-icon icon-amber">
+                            <span class="material-symbols-outlined">analytics</span>
+                        </div>
+                        <div class="quick-action-body">
+                            <h4>Laporan Keuangan</h4>
+                            <p>Analisis pendapatan, okupansi & tren booking.</p>
+                        </div>
+                    </div>
+                    <div class="quick-action-footer">
+                        <span>Lihat Laporan</span>
+                        <span class="material-symbols-outlined" style="font-size: 1.1rem;">arrow_forward</span>
+                    </div>
+                </a>
+
+                <!-- 5. Backup Database -->
+                <a href="backup.php" class="quick-action-card">
+                    <div class="quick-action-top">
+                        <div class="quick-action-icon icon-blue">
+                            <span class="material-symbols-outlined">cloud_sync</span>
+                        </div>
+                        <div class="quick-action-body">
+                            <h4>Backup Database</h4>
+                            <p>Pencadangan data otomatis & restore sistem.</p>
+                        </div>
+                    </div>
+                    <div class="quick-action-footer">
+                        <span>Kelola Backup</span>
+                        <span class="material-symbols-outlined" style="font-size: 1.1rem;">arrow_forward</span>
+                    </div>
+                </a>
+            </div>
         </div>
 
     </div>

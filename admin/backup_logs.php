@@ -42,7 +42,7 @@ include __DIR__ . '/../includes/header.php';
         <!-- Filter & Search Panel -->
         <div class="card" style="padding: 24px; margin-bottom: 24px;">
             <form method="GET" action="backup_logs.php" style="display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: 0;">
-                <div style="display: flex; gap: 12px; align-items: center; flex: 1; min-width: 280px;">
+                <div style="display: flex; gap: 12px; align-items: center; flex: 1; min-width: 0; width: 100%; flex-wrap: wrap;">
                     <div style="position: relative; flex: 1;">
                         <span class="material-symbols-outlined" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.2rem;">search</span>
                         <input type="text" name="search" placeholder="Cari nama file, admin, atau catatan..." value="<?= htmlspecialchars($search) ?>" style="padding: 10px 16px 10px 42px; font-size: 0.88rem; margin: 0;">
