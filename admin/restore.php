@@ -213,12 +213,7 @@ include __DIR__ . '/../includes/header.php';
     <p style="color:rgba(255,255,255,0.7); font-size:0.9rem; margin:0;">Mohon jangan menutup halaman ini atau mematikan server XAMPP.</p>
 </div>
 
-<style>
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-</style>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {

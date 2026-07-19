@@ -99,11 +99,11 @@ $imgIdxOutdoor = 0;
 
 <div class="container search-float">
     <form class="search-card" method="GET" action="index.php">
-        <div class="form-group" style="margin-bottom:0;">
+        <div class="form-group">
             <label for="tanggal">Pilih Tanggal</label>
             <input type="date" id="tanggal" name="tanggal" value="<?= htmlspecialchars($filterTanggal) ?>">
         </div>
-        <div class="form-group" style="margin-bottom:0;">
+        <div class="form-group">
             <label for="jam">Jam Main</label>
             <select id="jam" name="jam">
                 <option value="" <?= $filterJam === '' ? 'selected' : '' ?>>Semua Jam</option>
@@ -112,7 +112,7 @@ $imgIdxOutdoor = 0;
                 <option value="16:00-18:00" <?= $filterJam === '16:00-18:00' ? 'selected' : '' ?>>16:00 - 18:00</option>
             </select>
         </div>
-        <div class="form-group" style="margin-bottom:0;">
+        <div class="form-group">
             <label for="tipe">Tipe Lapangan</label>
             <select id="tipe" name="tipe">
                 <option value="" <?= $filterTipe === '' ? 'selected' : '' ?>>Semua Lapangan</option>

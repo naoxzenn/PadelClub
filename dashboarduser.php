@@ -113,11 +113,7 @@ $total_pengeluaran = array_sum(array_column(
                     Belum ada booking. <a href="booking.php">Booking sekarang</a>!
                 </div>
             <?php else: ?>
-                <style>
-                .booking-row-link { cursor: pointer; transition: background 0.15s; }
-                .booking-row-link:hover { background: var(--surface-alt); }
-                .booking-row-link td { vertical-align: middle; }
-                </style>
+                
                 <div class="table-responsive">
                     <table id="tabel-riwayat">
                         <thead>

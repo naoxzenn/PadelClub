@@ -83,6 +83,10 @@ if ($check_users) {
         mysqli_query($conn, "ALTER TABLE users ADD COLUMN full_name VARCHAR(150) NULL AFTER nama_lengkap");
         mysqli_query($conn, "UPDATE users SET full_name = nama_lengkap WHERE full_name IS NULL AND nama_lengkap IS NOT NULL");
     }
+    // Kolom untuk autentikasi REST API (token-based, terpisah dari session web)
+    if (!in_array('api_token', $user_cols)) {
+        mysqli_query($conn, "ALTER TABLE users ADD COLUMN api_token VARCHAR(64) NULL UNIQUE AFTER reset_expired_at");
+    }
 }
 
 // 1b. Add cancelled_at column to bookings table (for soft cancel feature)
