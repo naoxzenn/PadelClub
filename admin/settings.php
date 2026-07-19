@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Konfigurasi informasi klub padel, jam operasional sewa, dan parameter sistem reservasi.</p>
         </div>
 
-        <div class="card" style="max-width: 720px; padding: 32px;">
+        <div class="card" style="max-width: 100%; padding: 32px; margin-bottom: 32px;">
             <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--navy); margin-bottom: 24px;">Konfigurasi Umum</h2>
             <form method="POST" style="margin: 0;">
                 <input type="hidden" name="action" value="save_settings">
@@ -97,6 +97,165 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <span class="material-symbols-outlined" style="font-size:1.15rem; vertical-align:middle; margin-right:4px;">save</span> Simpan Pengaturan
                 </button>
             </form>
+        </div>
+
+        <!-- SECTION: MANAJEMEN DATABASE -->
+        <style>
+            .db-management-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+                margin-bottom: 40px;
+            }
+
+            @media (max-width: 768px) {
+                .db-management-grid {
+                    grid-template-columns: 1fr;
+                    gap: 16px;
+                }
+            }
+
+            .db-card {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 24px;
+                margin-bottom: 0;
+                border-radius: var(--radius-lg);
+                background: var(--card-bg);
+                border: 1px solid var(--border);
+                box-shadow: var(--shadow-sm);
+                transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            }
+
+            .db-card:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
+                border-color: var(--blue);
+            }
+
+            .db-card-icon {
+                width: 48px;
+                height: 48px;
+                min-width: 48px;
+                min-height: 48px;
+                border-radius: var(--radius-md, 12px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+
+            .db-card-icon span {
+                font-size: 1.6rem;
+            }
+
+            .db-card-content {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .db-card-content h3 {
+                font-size: 1.05rem;
+                font-weight: 700;
+                color: var(--navy);
+                margin: 0 0 4px 0;
+            }
+
+            .db-card-content p {
+                font-size: 0.85rem;
+                color: var(--text-muted);
+                margin: 0;
+                line-height: 1.4;
+            }
+
+            .btn-db-action {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 16px;
+                font-size: 0.85rem;
+                white-space: nowrap;
+                text-decoration: none;
+                flex-shrink: 0;
+            }
+        </style>
+
+        <div style="margin-top: 12px; margin-bottom: 24px;">
+            <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--navy); margin-bottom: 6px;">Manajemen Database</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Kelola proses backup, restore, export, serta konfigurasi database aplikasi.</p>
+        </div>
+
+        <div class="db-management-grid">
+            <!-- 1. Backup Database -->
+            <div class="card db-card">
+                <div class="db-card-icon icon-blue">
+                    <span class="material-symbols-outlined">backup</span>
+                </div>
+                <div class="db-card-content">
+                    <h3>Backup Database</h3>
+                    <p>Membuat cadangan database secara manual.</p>
+                </div>
+                <a href="backup.php" class="btn btn-outline btn-db-action">
+                    <span class="material-symbols-outlined">open_in_new</span> Buka
+                </a>
+            </div>
+
+            <!-- 2. Restore Database -->
+            <div class="card db-card">
+                <div class="db-card-icon icon-amber">
+                    <span class="material-symbols-outlined">settings_backup_restore</span>
+                </div>
+                <div class="db-card-content">
+                    <h3>Restore Database</h3>
+                    <p>Mengembalikan database dari file backup.</p>
+                </div>
+                <a href="restore.php" class="btn btn-outline btn-db-action">
+                    <span class="material-symbols-outlined">open_in_new</span> Buka
+                </a>
+            </div>
+
+            <!-- 3. Export Data -->
+            <div class="card db-card">
+                <div class="db-card-icon icon-green">
+                    <span class="material-symbols-outlined">download</span>
+                </div>
+                <div class="db-card-content">
+                    <h3>Export Data</h3>
+                    <p>Export data ke Excel atau format lain.</p>
+                </div>
+                <a href="export.php" class="btn btn-outline btn-db-action">
+                    <span class="material-symbols-outlined">open_in_new</span> Buka
+                </a>
+            </div>
+
+            <!-- 4. Log Backup -->
+            <div class="card db-card">
+                <div class="db-card-icon icon-purple">
+                    <span class="material-symbols-outlined">history</span>
+                </div>
+                <div class="db-card-content">
+                    <h3>Log Backup</h3>
+                    <p>Melihat riwayat backup database.</p>
+                </div>
+                <a href="backup_logs.php" class="btn btn-outline btn-db-action">
+                    <span class="material-symbols-outlined">open_in_new</span> Buka
+                </a>
+            </div>
+
+            <!-- 5. Pengaturan Backup -->
+            <div class="card db-card">
+                <div class="db-card-icon icon-blue">
+                    <span class="material-symbols-outlined">settings_suggest</span>
+                </div>
+                <div class="db-card-content">
+                    <h3>Pengaturan Backup</h3>
+                    <p>Mengatur konfigurasi backup database.</p>
+                </div>
+                <a href="backup_settings.php" class="btn btn-outline btn-db-action">
+                    <span class="material-symbols-outlined">open_in_new</span> Buka
+                </a>
+            </div>
         </div>
 
     </div>

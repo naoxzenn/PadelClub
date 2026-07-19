@@ -1,7 +1,7 @@
 <?php
 $role = $_SESSION['role'] ?? '';
 ?>
-<?php if ($role === 'admin' || $role === 'kasir' || $role === 'customer'): ?>
+<?php if ($role === 'admin' || $role === 'kasir'): ?>
     </div> <!-- Close dashboard-content -->
     </main> <!-- Close dashboard-main -->
     </div> <!-- Close dashboard-container -->

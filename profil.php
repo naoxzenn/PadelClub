@@ -1,19 +1,11 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Validasi Session
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
-    exit;
-}
-
-// Hanya ijinkan customer
-if ($_SESSION['role'] !== 'customer') {
-    if ($_SESSION['role'] === 'admin') {
-        header('Location: admin/dashboard.php');
-    } elseif ($_SESSION['role'] === 'kasir') {
-        header('Location: kasir/dashboard.php');
-    }
     exit;
 }
 
@@ -22,20 +14,34 @@ require_once __DIR__ . '/helpers/TokenHelper.php';
 require_once __DIR__ . '/helpers/MailHelper.php';
 /** @var mysqli $conn */
 
-function formatTanggalIndonesia($datetime) {
-    if (empty($datetime)) return '-';
-    $bulan = [
-        1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-    ];
-    $time = strtotime($datetime);
-    $tgl = date('j', $time);
-    $bln = (int)date('n', $time);
-    $thn = date('Y', $time);
-    return $tgl . ' ' . $bulan[$bln] . ' ' . $thn;
+if (!function_exists('formatTanggalIndonesia')) {
+    function formatTanggalIndonesia($datetime)
+    {
+        if (empty($datetime))
+            return '-';
+        $bulan = [
+            1 => 'Januari',
+            'Februari',
+            'Maret',
+            'April',
+            'Mei',
+            'Juni',
+            'Juli',
+            'Agustus',
+            'September',
+            'Oktober',
+            'November',
+            'Desember'
+        ];
+        $time = strtotime($datetime);
+        $tgl = date('j', $time);
+        $bln = (int) date('n', $time);
+        $thn = date('Y', $time);
+        return $tgl . ' ' . $bulan[$bln] . ' ' . $thn;
+    }
 }
 
-$user_id = (int)$_SESSION['user_id'];
+$user_id = (int) $_SESSION['user_id'];
 
 // Proteksi CSRF
 if (empty($_SESSION['csrf_token'])) {
@@ -43,7 +49,9 @@ if (empty($_SESSION['csrf_token'])) {
 }
 
 $pageTitle = 'Pengaturan Profil';
-$baseUrl = '';
+if (!isset($baseUrl)) {
+    $baseUrl = '';
+}
 
 // Ambil data user terbaru
 $stmt = mysqli_prepare($conn, "SELECT * FROM users WHERE id = ?");
@@ -133,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ACTION 2: GANTI PASSWORD
     elseif ($action === 'change_password') {
         // Pengguna Google tidak boleh ganti password dari sini
-        if ($user['login_provider'] === 'google') {
+        if (isset($user['login_provider']) && $user['login_provider'] === 'google') {
             $_SESSION['toast_msg'] = ['text' => 'Ganti password dinonaktifkan untuk akun Google Login.', 'type' => 'error'];
             header('Location: profil.php');
             exit;
@@ -173,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hashed = password_hash($new_pass, PASSWORD_DEFAULT);
         $stmt_pw = mysqli_prepare($conn, "UPDATE users SET password = ? WHERE id = ?");
         mysqli_stmt_bind_param($stmt_pw, 'si', $hashed, $user_id);
-        
+
         if (mysqli_stmt_execute($stmt_pw)) {
             $_SESSION['toast_msg'] = ['text' => 'Password berhasil diubah.', 'type' => 'success'];
         } else {
@@ -186,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // ACTION 3: KIRIM ULANG EMAIL VERIFIKASI
     elseif ($action === 'resend_verification') {
-        if ($user['email_verified']) {
+        if (isset($user['email_verified']) && $user['email_verified']) {
             $_SESSION['toast_msg'] = ['text' => 'Email Anda sudah terverifikasi.', 'type' => 'warning'];
             header('Location: profil.php');
             exit;
@@ -219,19 +227,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include __DIR__ . '/includes/header.php';
 ?>
 
-<section class="page-header">
-    <div class="container">
-        <h1>Pengaturan Profil</h1>
-        <p>Kelola informasi pribadi dan kata sandi akun Anda di sini.</p>
-    </div>
-</section>
-
-<section class="section">
-    <div class="container profile-page-container">
+<section class="section profile-page-section">
+    <div class="container profile-redesign-container">
 
         <!-- NOTICE BANNER JIKA EMAIL BELUM DIVERIFIKASI -->
-        <?php if (!$user['email_verified']): ?>
-            <div class="alert alert-warning profile-notice-banner">
+        <?php if (isset($user['email_verified']) && !$user['email_verified']): ?>
+            <div class="alert alert-warning profile-notice-banner" style="margin-bottom: 24px;">
                 <div class="profile-notice-content">
                     <span class="material-symbols-outlined profile-notice-icon">mark_email_unread</span>
                     <div class="profile-notice-text">
@@ -250,164 +251,388 @@ include __DIR__ . '/includes/header.php';
             </div>
         <?php endif; ?>
 
-        <!-- CARD 1: EDIT INFORMASI AKUN & PROFIL -->
-        <div class="card profile-card">
-            
-            <!-- Visual Default Avatar -->
-            <div class="profile-visual-header">
-                <div class="profile-default-avatar">
-                    <span class="material-symbols-outlined">person</span>
-                </div>
-                <h2 class="profile-visual-name"><?= htmlspecialchars($user['nama_lengkap']) ?></h2>
-                <span class="profile-visual-handle">@<?= htmlspecialchars($user['username'] ?? '') ?></span>
-            </div>
+        <!-- SATU CARD BESAR UTAMA -->
+        <div class="profile-main-card">
 
-            <!-- Form Edit Profil -->
-            <form action="profil.php" method="POST" id="form-update-profile" class="profile-form">
-                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                <input type="hidden" name="action" value="update_profile">
-
-                <div class="form-group">
-                    <label for="prof-nama">Nama Lengkap <span class="text-danger">*</span></label>
-                    <input type="text" id="prof-nama" name="nama_lengkap" class="form-control" value="<?= htmlspecialchars($user['nama_lengkap']) ?>" placeholder="Nama lengkap Anda" required autocomplete="name">
-                </div>
-
-                <div class="form-group">
-                    <label for="prof-username">Username <span class="text-danger">*</span></label>
-                    <input type="text" id="prof-username" name="username" class="form-control" value="<?= htmlspecialchars($user['username'] ?? '') ?>" placeholder="Tentukan username unik" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="prof-email">Email (Read-only)</label>
-                    <div class="input-readonly-wrapper">
-                        <input type="email" id="prof-email" class="form-control input-readonly" value="<?= htmlspecialchars($user['email']) ?>" readonly disabled>
-                        <?php if ($user['email_verified']): ?>
-                            <span class="badge badge-success badge-inline-status">
-                                <span class="material-symbols-outlined">verified</span> Terverifikasi
-                            </span>
+            <!-- HEADER AKUN (Foto Profil, Nama, Role Badge, Tombol Edit Profil, Tombol Ganti Password) -->
+            <div class="profile-card-header">
+                <div class="profile-avatar-info-group">
+                    <div class="profile-avatar-wrapper">
+                        <?php
+                        $dispAvatar = $user['avatar'] ?? '';
+                        $dispName = $user['nama_lengkap'] ?? $_SESSION['nama'] ?? 'User';
+                        $dispRole = $user['role'] ?? $_SESSION['role'] ?? 'customer';
+                        if (!empty($dispAvatar)):
+                            if (str_starts_with($dispAvatar, 'http')): ?>
+                                <img src="<?= htmlspecialchars($dispAvatar) ?>" alt="Avatar">
+                            <?php else: ?>
+                                <img src="<?= $baseUrl ?? '' ?>uploads/profile/<?= htmlspecialchars($dispAvatar) ?>"
+                                    alt="Avatar">
+                            <?php endif; ?>
                         <?php else: ?>
-                            <span class="badge badge-warning badge-inline-status">Belum Verifikasi</span>
+                            <?= strtoupper(substr($dispName, 0, 1)) ?>
                         <?php endif; ?>
+                    </div>
+
+                    <div class="profile-identity-details">
+                        <h2 class="profile-user-name"><?= htmlspecialchars($dispName) ?></h2>
+                        <div class="profile-meta-badges">
+                            <?php
+                            $roleClass = $dispRole === 'admin' ? 'admin' : ($dispRole === 'kasir' ? 'kasir' : 'customer');
+                            $roleLabel = ucfirst($dispRole === 'customer' ? 'User' : $dispRole);
+                            ?>
+                            <span class="profile-role-badge <?= $roleClass ?>">
+                                <span class="material-symbols-outlined" style="font-size: 14px;">verified_user</span>
+                                <?= htmlspecialchars($roleLabel) ?>
+                            </span>
+
+                            <span class="profile-status-badge">
+                                <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
+                                Aktif
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="prof-hp">Nomor HP / Telepon <span class="text-danger">*</span></label>
-                    <input type="text" id="prof-hp" name="nomor_hp" class="form-control" value="<?= htmlspecialchars($user['nomor_telepon'] ?? '') ?>" placeholder="Contoh: 081234567890" required autocomplete="tel">
+                <!-- Tombol Edit Profil & Tombol Ganti Password -->
+                <div class="profile-header-actions">
+                    <button type="button" class="btn btn-primary" onclick="openProfileModal('modal-edit-profile')">
+                        <span class="material-symbols-outlined">edit</span>
+                        Edit Profil
+                    </button>
+
+                    <button type="button" class="btn btn-outline" onclick="openProfileModal('modal-change-password')">
+                        <span class="material-symbols-outlined">key</span>
+                        Ganti Password
+                    </button>
+                </div>
+            </div>
+
+            <!-- INFORMASI AKUN (Format Label : Value dengan Aligned Colons dan Thin Dividers) -->
+            <div class="profile-card-body">
+                <div class="profile-section-title">
+                    <span class="material-symbols-outlined">manage_accounts</span>
+                    Informasi Akun
                 </div>
 
-                <div class="form-row form-row-2col">
-                    <div class="form-group">
-                        <label>Login Menggunakan</label>
-                        <div class="readonly-badge-box">
-                            <?php if ($user['login_provider'] === 'google'): ?>
-                                <span class="badge badge-provider-google">
-                                    <svg width="16" height="16" viewBox="0 0 24 24">
-                                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.58c-.28 1.48-1.12 2.74-2.38 3.59v2.98h3.85c2.26-2.09 3.69-5.17 3.69-8.42z"/>
-                                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.85-2.98c-1.08.72-2.45 1.16-4.08 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.37 24 12 24z"/>
-                                        <path fill="#FBBC05" d="M5.27 14.31c-.25-.72-.39-1.49-.39-2.31s.14-1.59.39-2.31V6.6H1.29C.47 8.22 0 10.06 0 12s.47 3.78 1.29 5.4l3.98-3.09z"/>
-                                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.93 1.19 15.22 0 12 0 7.37 0 3.26 2.7 1.29 6.6l3.98 3.09c.95-2.85 3.6-4.94 6.73-4.94z"/>
-                                    </svg>
-                                    Google Login
+                <div class="profile-info-grid">
+
+                    <!-- 1. Nama -->
+                    <div class="profile-info-row-item">
+                        <div class="profile-info-label">Nama</div>
+                        <div class="profile-info-colon"></div>
+                        <div class="profile-info-value">
+                            <div class="profile-value-text-wrap">
+                                <span
+                                    class="profile-value-text"><?= htmlspecialchars($user['nama_lengkap'] ?? '-') ?></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-info-divider"></div>
+
+                    <!-- 2. Username -->
+                    <div class="profile-info-row-item">
+                        <div class="profile-info-label">Username</div>
+                        <div class="profile-info-colon"></div>
+                        <div class="profile-info-value">
+                            <div class="profile-value-text-wrap">
+                                <span class="profile-value-text">
+                                    <?php
+                                    $dispUsername = !empty($user['username']) ? $user['username'] : explode('@', $user['email'])[0];
+                                    echo htmlspecialchars($dispUsername);
+                                    ?>
                                 </span>
-                            <?php else: ?>
-                                <span class="badge badge-provider-manual">
-                                    <span class="material-symbols-outlined">key</span> Manual Login
-                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-info-divider"></div>
+
+                    <!-- 3. Email -->
+                    <div class="profile-info-row-item">
+                        <div class="profile-info-label">Email</div>
+                        <div class="profile-info-colon"></div>
+                        <div class="profile-info-value">
+                            <div class="profile-value-text-wrap">
+                                <span class="profile-value-text"><?= htmlspecialchars($user['email'] ?? '-') ?></span>
+                            </div>
+                            <?php if (isset($user['email_verified']) && $user['email_verified']): ?>
+                                <div class="profile-badge-sub-row">
+                                    <span class="badge badge-success"
+                                        style="font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                                        <span class="material-symbols-outlined" style="font-size: 13px;">verified</span>
+                                        Verified
+                                    </span>
+                                </div>
                             <?php endif; ?>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label>Bergabung Sejak</label>
-                        <div class="readonly-text-box">
-                            <span class="material-symbols-outlined">calendar_today</span>
-                            <?= formatTanggalIndonesia($user['created_at']) ?>
+                    <div class="profile-info-divider"></div>
+
+                    <!-- 4. Nomor HP -->
+                    <div class="profile-info-row-item">
+                        <div class="profile-info-label">Nomor HP</div>
+                        <div class="profile-info-colon"></div>
+                        <div class="profile-info-value">
+                            <div class="profile-value-text-wrap">
+                                <span class="profile-value-text">
+                                    <?php
+                                    $noHp = $user['nomor_telepon'] ?? $user['phone'] ?? '-';
+                                    echo htmlspecialchars(!empty($noHp) ? $noHp : '-');
+                                    ?>
+                                </span>
+                            </div>
                         </div>
                     </div>
+
+                    <div class="profile-info-divider"></div>
+
+                    <!-- 5. Status -->
+                    <div class="profile-info-row-item">
+                        <div class="profile-info-label">Status</div>
+                        <div class="profile-info-colon"></div>
+                        <div class="profile-info-value">
+                            <div class="profile-value-text-wrap">
+                                <span class="profile-value-text"
+                                    style="color: #22c55e; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+                                    <span
+                                        style="width: 8px; height: 8px; border-radius: 50%; background-color: #22c55e; display: inline-block;"></span>
+                                    Aktif
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-info-divider"></div>
+
+                    <!-- 6. Tanggal Gabung -->
+                    <div class="profile-info-row-item">
+                        <div class="profile-info-label">Tanggal Gabung</div>
+                        <div class="profile-info-colon"></div>
+                        <div class="profile-info-value">
+                            <div class="profile-value-text-wrap">
+                                <span
+                                    class="profile-value-text"><?= formatTanggalIndonesia($user['created_at'] ?? date('Y-m-d')) ?></span>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
-
-                <div class="profile-form-actions">
-                    <button type="submit" class="btn btn-primary btn-save-profile" id="btn-save-profile">
-                        <span class="material-symbols-outlined">save</span>
-                        Simpan Perubahan
-                    </button>
-                </div>
-            </form>
-
-        </div>
-
-        <!-- CARD 2: KATA SANDI / KEAMANAN -->
-        <div class="card profile-card">
-            <div class="card-header-title">
-                <span class="material-symbols-outlined">lock</span>
-                <h2>Keamanan & Kata Sandi</h2>
             </div>
 
-            <?php if ($user['login_provider'] === 'google'): ?>
-                <div class="alert alert-info google-login-notice">
-                    <span class="material-symbols-outlined">info</span>
-                    <div>
-                        <strong>Akun menggunakan Google Login</strong>
-                        <p>Password dikelola secara langsung dan aman oleh Google.</p>
-                    </div>
+            <!-- PUSAT PENGATURAN AKUN -->
+            <div class="profile-card-body"
+                style="border-top: 1px solid var(--border); background: var(--surface-alt); padding: 24px 32px; border-bottom-left-radius: var(--radius-lg); border-bottom-right-radius: var(--radius-lg);">
+                <div class="profile-section-title" style="margin-bottom: 16px;">
+                    <span class="material-symbols-outlined">settings_suggest</span>
+                    Pusat Pengaturan Akun
                 </div>
-            <?php else: ?>
-                <form action="profil.php" method="POST" id="form-change-password" class="profile-form">
-                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                    <input type="hidden" name="action" value="change_password">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                    <button type="button" class="btn btn-outline"
+                        onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+                        style="justify-content: flex-start; gap: 10px; padding: 12px 16px; font-size: 0.88rem; background: var(--card-bg);">
+                        <span class="material-symbols-outlined" style="color: var(--blue);">person</span>
+                        Informasi Akun
+                    </button>
+                    <button type="button" class="btn btn-outline" onclick="openProfileModal('modal-edit-profile')"
+                        style="justify-content: flex-start; gap: 10px; padding: 12px 16px; font-size: 0.88rem; background: var(--card-bg);">
+                        <span class="material-symbols-outlined" style="color: var(--blue);">edit</span>
+                        Edit Profil
+                    </button>
+                    <button type="button" class="btn btn-outline" onclick="openProfileModal('modal-change-password')"
+                        style="justify-content: flex-start; gap: 10px; padding: 12px 16px; font-size: 0.88rem; background: var(--card-bg);">
+                        <span class="material-symbols-outlined" style="color: #F59E0B;">key</span>
+                        Ganti Password
+                    </button>
+                    <?php if (($user['role'] ?? $_SESSION['role'] ?? 'customer') === 'customer'): ?>
+                        <a href="dashboarduser.php?scroll=riwayat" class="btn btn-outline"
+                            style="justify-content: flex-start; gap: 10px; padding: 12px 16px; font-size: 0.88rem; text-decoration: none; color: inherit; background: var(--card-bg);">
+                            <span class="material-symbols-outlined" style="color: var(--green);">history</span>
+                            Riwayat Booking
+                        </a>
+                    <?php endif; ?>
+                    <a href="logout.php" class="btn btn-outline"
+                        style="justify-content: flex-start; gap: 10px; padding: 12px 16px; font-size: 0.88rem; text-decoration: none; color: #EF4444; border-color: rgba(239,68,68,0.3); background: var(--card-bg);">
+                        <span class="material-symbols-outlined">logout</span>
+                        Logout / Keluar
+                    </a>
+                </div>
+            </div>
 
-                    <div class="form-group">
-                        <label for="pass-lama">Password Lama <span class="text-danger">*</span></label>
-                        <input type="password" id="pass-lama" name="password_lama" class="form-control" placeholder="Ketikkan password saat ini" required>
-                    </div>
-
-                    <div class="form-row form-row-2col">
-                        <div class="form-group">
-                            <label for="pass-baru">Password Baru <span class="text-danger">*</span></label>
-                            <input type="password" id="pass-baru" name="password_baru" class="form-control" placeholder="Minimal 8 karakter" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="pass-conf">Konfirmasi Password Baru <span class="text-danger">*</span></label>
-                            <input type="password" id="pass-conf" name="konfirmasi_password" class="form-control" placeholder="Ulangi password baru" required>
-                        </div>
-                    </div>
-
-                    <div class="profile-form-actions">
-                        <button type="submit" class="btn btn-outline btn-save-password" id="btn-save-password">
-                            <span class="material-symbols-outlined">key</span>
-                            Ubah Kata Sandi
-                        </button>
-                    </div>
-                </form>
-            <?php endif; ?>
         </div>
 
     </div>
 </section>
 
+<!-- MODAL 1: EDIT PROFIL -->
+<div id="modal-edit-profile" class="profile-modal-overlay" style="display: none;">
+    <div class="profile-modal-box">
+        <div class="profile-modal-header">
+            <h3><span class="material-symbols-outlined">edit</span> Edit Informasi Profil</h3>
+            <button type="button" class="profile-modal-close"
+                onclick="closeProfileModal('modal-edit-profile')">&times;</button>
+        </div>
+        <form action="profil.php" method="POST" id="form-update-profile">
+            <div class="profile-modal-body">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                <input type="hidden" name="action" value="update_profile">
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="prof-nama" style="font-weight: 600; margin-bottom: 6px; display: block;">Nama Lengkap
+                        <span class="text-danger">*</span></label>
+                    <input type="text" id="prof-nama" name="nama_lengkap" class="form-control"
+                        value="<?= htmlspecialchars($user['nama_lengkap']) ?>" required autocomplete="name">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="prof-username" style="font-weight: 600; margin-bottom: 6px; display: block;">Username
+                        <span class="text-danger">*</span></label>
+                    <input type="text" id="prof-username" name="username" class="form-control"
+                        value="<?= htmlspecialchars($user['username'] ?? '') ?>" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="prof-email" style="font-weight: 600; margin-bottom: 6px; display: block;">Email
+                        (Read-only)</label>
+                    <input type="email" id="prof-email" class="form-control"
+                        value="<?= htmlspecialchars($user['email']) ?>" readonly disabled
+                        style="opacity: 0.7; cursor: not-allowed;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="prof-hp" style="font-weight: 600; margin-bottom: 6px; display: block;">Nomor HP /
+                        Telepon <span class="text-danger">*</span></label>
+                    <input type="text" id="prof-hp" name="nomor_hp" class="form-control"
+                        value="<?= htmlspecialchars($user['nomor_telepon'] ?? '') ?>" required autocomplete="tel">
+                </div>
+            </div>
+            <div class="profile-modal-footer">
+                <button type="button" class="btn btn-outline"
+                    onclick="closeProfileModal('modal-edit-profile')">Batal</button>
+                <button type="submit" class="btn btn-primary"><span class="material-symbols-outlined">save</span> Simpan
+                    Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL 2: GANTI PASSWORD -->
+<div id="modal-change-password" class="profile-modal-overlay" style="display: none;">
+    <div class="profile-modal-box">
+        <div class="profile-modal-header">
+            <h3><span class="material-symbols-outlined">key</span> Ganti Password</h3>
+            <button type="button" class="profile-modal-close"
+                onclick="closeProfileModal('modal-change-password')">&times;</button>
+        </div>
+        <?php if (isset($user['login_provider']) && $user['login_provider'] === 'google'): ?>
+            <div class="profile-modal-body">
+                <div class="alert alert-info" style="margin: 0;">
+                    <span class="material-symbols-outlined">info</span>
+                    <div>
+                        <strong>Akun Google Login</strong>
+                        <p style="margin: 4px 0 0 0;">Password dikelola secara langsung dan aman oleh Google.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="profile-modal-footer">
+                <button type="button" class="btn btn-outline"
+                    onclick="closeProfileModal('modal-change-password')">Tutup</button>
+            </div>
+        <?php else: ?>
+            <form action="profil.php" method="POST" id="form-change-password">
+                <div class="profile-modal-body">
+                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                    <input type="hidden" name="action" value="change_password">
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="pass-lama" style="font-weight: 600; margin-bottom: 6px; display: block;">Password Lama
+                            <span class="text-danger">*</span></label>
+                        <input type="password" id="pass-lama" name="password_lama" class="form-control"
+                            placeholder="Ketikkan password saat ini" required>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="pass-baru" style="font-weight: 600; margin-bottom: 6px; display: block;">Password Baru
+                            <span class="text-danger">*</span></label>
+                        <input type="password" id="pass-baru" name="password_baru" class="form-control"
+                            placeholder="Minimal 8 karakter" required>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="pass-conf" style="font-weight: 600; margin-bottom: 6px; display: block;">Konfirmasi
+                            Password Baru <span class="text-danger">*</span></label>
+                        <input type="password" id="pass-conf" name="konfirmasi_password" class="form-control"
+                            placeholder="Ulangi password baru" required>
+                    </div>
+                </div>
+                <div class="profile-modal-footer">
+                    <button type="button" class="btn btn-outline"
+                        onclick="closeProfileModal('modal-change-password')">Batal</button>
+                    <button type="submit" class="btn btn-primary"><span class="material-symbols-outlined">key</span> Ubah
+                        Kata Sandi</button>
+                </div>
+            </form>
+        <?php endif; ?>
+    </div>
+</div>
+
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const forms = ['form-update-profile', 'form-change-password'];
-    forms.forEach(id => {
-        const el = document.getElementById(id);
+    function openProfileModal(modalId) {
+        const el = document.getElementById(modalId);
         if (el) {
-            el.addEventListener('submit', function() {
-                const btn = el.querySelector('button[type="submit"]');
-                if (btn) {
-                    btn.classList.add('btn-loading');
-                    btn.disabled = true;
+            el.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeProfileModal(modalId) {
+        const el = document.getElementById(modalId);
+        if (el) {
+            el.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // Backdrop click close
+        document.querySelectorAll('.profile-modal-overlay').forEach(modal => {
+            modal.addEventListener('click', function (e) {
+                if (e.target === this) {
+                    closeProfileModal(this.id);
                 }
             });
-        }
+        });
+
+        // Escape key close
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.profile-modal-overlay').forEach(m => {
+                    closeProfileModal(m.id);
+                });
+            }
+        });
+
+        const forms = ['form-update-profile', 'form-change-password'];
+        forms.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('submit', function () {
+                    const btn = el.querySelector('button[type="submit"]');
+                    if (btn) {
+                        btn.classList.add('btn-loading');
+                        btn.disabled = true;
+                    }
+                });
+            }
+        });
     });
-});
 </script>
 
 <?php if (isset($_SESSION['toast_msg'])): ?>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
             showToast(<?= json_encode($_SESSION['toast_msg']['text']) ?>, <?= json_encode($_SESSION['toast_msg']['type']) ?>);
         });
     </script>

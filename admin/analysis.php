@@ -188,12 +188,12 @@ while ($row = mysqli_fetch_assoc($res_pay_stats)) {
             </div>
 
             <!-- Top Customer -->
-            <div class="dashboard-stat-card" style="grid-column: span 2;">
+            <div class="dashboard-stat-card stat-card-full">
                 <div class="stat-card-icon icon-blue">
                     <span class="material-symbols-outlined">person</span>
                 </div>
-                <div class="stat-card-info">
-                    <span class="stat-card-value" style="font-size: 1.1rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;">
+                <div class="stat-card-info" style="min-width: 0; flex: 1;">
+                    <span class="stat-card-value" style="font-size: 1.1rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">
                         <?= $top_cust ? htmlspecialchars($top_cust['nama_lengkap']) : 'N/A' ?>
                     </span>
                     <span class="stat-card-label">Top Customer (<?= $top_cust ? $top_cust['count'] : 0 ?> Booking, Rp <?= $top_cust ? number_format($top_cust['total_spent'], 0, ',', '.') : 0 ?>)</span>

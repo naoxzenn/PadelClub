@@ -47,12 +47,12 @@ if (isset($_SESSION['user_id'])) {
 </head>
 
 <body
-    class="<?= (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'kasir' || $_SESSION['role'] === 'customer')) ? 'dashboard-body' : '' ?>">
+    class="<?= (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'kasir')) ? 'dashboard-body' : '' ?>">
 
     <!-- Toast container (shared by all pages) -->
     <div id="toast-container"></div>
 
-    <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'kasir' || $_SESSION['role'] === 'customer')): ?>
+    <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'kasir')): ?>
         <!-- DASHBOARD LAYOUT -->
         <div class="dashboard-container">
             <!-- Sidebar -->
@@ -62,30 +62,32 @@ if (isset($_SESSION['user_id'])) {
                         <span class="material-symbols-outlined" style="font-size: 2.2rem; color: var(--blue);">sports_tennis</span>
                         <span class="gradient-text" style="font-size: 1.6rem; font-weight: 800; text-decoration: none;">PadelClub</span>
                     </div>
-                    <div class="sidebar-profile" style="margin: 15px 0; text-align: center;">
-                        <div class="profile-avatar" style="width: 70px; height: 70px; border-radius: 50%; background: var(--gradient); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; margin: 0 auto 10px auto; border: 3px solid rgba(255,255,255,0.1); box-shadow: var(--shadow-sm); overflow:hidden;">
-                            <?php 
-                            $dispAvatar = $headerUser['avatar'] ?? '';
-                            $dispName = $headerUser['nama_lengkap'] ?? $_SESSION['nama'] ?? 'User';
-                            $dispRole = $_SESSION['role'] ?? 'customer';
-                            if (!empty($dispAvatar)): 
-                                if (str_starts_with($dispAvatar, 'http')): ?>
-                                    <img src="<?= htmlspecialchars($dispAvatar) ?>" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">
+                    <a href="<?= ($dispRole === 'admin') ? (($baseUrl ?? '') . 'admin/profil.php') : (($baseUrl ?? '') . 'profil.php') ?>" class="sidebar-profile-link" style="text-decoration: none; display: block;">
+                        <div class="sidebar-profile" style="margin: 15px 0; text-align: center;">
+                            <div class="profile-avatar" style="width: 70px; height: 70px; border-radius: 50%; background: var(--gradient); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; margin: 0 auto 10px auto; border: 3px solid rgba(255,255,255,0.1); box-shadow: var(--shadow-sm); overflow:hidden;">
+                                <?php 
+                                $dispAvatar = $headerUser['avatar'] ?? '';
+                                $dispName = $headerUser['nama_lengkap'] ?? $_SESSION['nama'] ?? 'User';
+                                $dispRole = $_SESSION['role'] ?? 'customer';
+                                if (!empty($dispAvatar)): 
+                                    if (str_starts_with($dispAvatar, 'http')): ?>
+                                        <img src="<?= htmlspecialchars($dispAvatar) ?>" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">
+                                    <?php else: ?>
+                                        <img src="<?= $baseUrl ?? '' ?>uploads/profile/<?= htmlspecialchars($dispAvatar) ?>" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">
+                                    <?php endif; ?>
                                 <?php else: ?>
-                                    <img src="<?= $baseUrl ?? '' ?>uploads/profile/<?= htmlspecialchars($dispAvatar) ?>" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">
+                                    <?= strtoupper(substr($dispName, 0, 1)) ?>
                                 <?php endif; ?>
-                            <?php else: ?>
-                                <?= strtoupper(substr($dispName, 0, 1)) ?>
-                            <?php endif; ?>
+                            </div>
+                            <h4 class="profile-name" style="font-size: 1rem; font-weight: 700; color: #fff; margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;"><?= htmlspecialchars($dispName) ?></h4>
+                            <?php 
+                            $badgeBg = $dispRole === 'admin' ? 'rgba(14, 165, 233, 0.15)' : ($dispRole === 'kasir' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(34, 197, 94, 0.15)');
+                            $badgeCo = $dispRole === 'admin' ? 'var(--blue)' : ($dispRole === 'kasir' ? '#F59E0B' : 'var(--green)');
+                            $badgeBo = $dispRole === 'admin' ? 'rgba(14, 165, 233, 0.3)' : ($dispRole === 'kasir' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(34, 197, 94, 0.3)');
+                            ?>
+                            <span class="role-badge" style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; background: <?= $badgeBg ?>; color: <?= $badgeCo ?>; border: 1px solid <?= $badgeBo ?>; display: inline-block; padding: 2px 8px; border-radius: 4px;"><?= ucfirst($dispRole) ?></span>
                         </div>
-                        <h4 class="profile-name" style="font-size: 1rem; font-weight: 700; color: #fff; margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;"><?= htmlspecialchars($dispName) ?></h4>
-                        <?php 
-                        $badgeBg = $dispRole === 'admin' ? 'rgba(14, 165, 233, 0.15)' : ($dispRole === 'kasir' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(34, 197, 94, 0.15)');
-                        $badgeCo = $dispRole === 'admin' ? 'var(--blue)' : ($dispRole === 'kasir' ? '#F59E0B' : 'var(--green)');
-                        $badgeBo = $dispRole === 'admin' ? 'rgba(14, 165, 233, 0.3)' : ($dispRole === 'kasir' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(34, 197, 94, 0.3)');
-                        ?>
-                        <span class="role-badge" style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; background: <?= $badgeBg ?>; color: <?= $badgeCo ?>; border: 1px solid <?= $badgeBo ?>; display: inline-block; padding: 2px 8px; border-radius: 4px;"><?= ucfirst($dispRole) ?></span>
-                    </div>
+                    </a>
                 </div>
 
                 <nav class="sidebar-nav">
@@ -126,49 +128,14 @@ if (isset($_SESSION['user_id'])) {
                             class="<?= $currentPage === 'users.php' ? 'active' : '' ?>">
                             <span class="material-symbols-outlined">manage_accounts</span> Users
                         </a>
-                        <div class="sidebar-menu-group" style="display: flex; flex-direction: column;">
-                            <a href="<?= $baseUrl ?? '' ?>admin/settings.php"
-                                class="<?= ($currentPage === 'settings.php' && strpos($_SERVER['PHP_SELF'], 'backup') === false && strpos($_SERVER['PHP_SELF'], 'restore') === false && strpos($_SERVER['PHP_SELF'], 'export') === false && strpos($_SERVER['PHP_SELF'], 'log') === false) ? 'active' : '' ?>">
-                                <span class="material-symbols-outlined">settings</span> Settings
-                            </a>
-                            <?php 
-                            $isBackupPage = (
-                                strpos($currentPage, 'backup') !== false || 
-                                strpos($currentPage, 'restore') !== false || 
-                                strpos($currentPage, 'export') !== false ||
-                                strpos($currentPage, 'log') !== false
-                            );
-                            if ($isBackupPage || $currentPage === 'settings.php'): 
-                            ?>
-                                <div class="sidebar-submenu" style="padding-left: 24px; display: flex; flex-direction: column; gap: 4px; margin-top: 4px; margin-bottom: 8px;">
-                                    <a href="<?= $baseUrl ?? '' ?>admin/backup.php" 
-                                       class="<?= $currentPage === 'backup.php' ? 'active' : '' ?>" 
-                                       style="padding: 8px 12px; font-size: 0.8rem; gap: 8px; font-weight: normal; border-left: none; border-radius: var(--radius-sm);">
-                                        <span class="material-symbols-outlined" style="font-size: 1.1rem;">backup</span> Backup Database
-                                    </a>
-                                    <a href="<?= $baseUrl ?? '' ?>admin/restore.php" 
-                                       class="<?= $currentPage === 'restore.php' ? 'active' : '' ?>" 
-                                       style="padding: 8px 12px; font-size: 0.8rem; gap: 8px; font-weight: normal; border-left: none; border-radius: var(--radius-sm);">
-                                        <span class="material-symbols-outlined" style="font-size: 1.1rem;">settings_backup_restore</span> Restore Database
-                                    </a>
-                                    <a href="<?= $baseUrl ?? '' ?>admin/export.php" 
-                                       class="<?= $currentPage === 'export.php' ? 'active' : '' ?>" 
-                                       style="padding: 8px 12px; font-size: 0.8rem; gap: 8px; font-weight: normal; border-left: none; border-radius: var(--radius-sm);">
-                                        <span class="material-symbols-outlined" style="font-size: 1.1rem;">download</span> Export Data
-                                    </a>
-                                    <a href="<?= $baseUrl ?? '' ?>admin/backup_logs.php" 
-                                       class="<?= $currentPage === 'backup_logs.php' ? 'active' : '' ?>" 
-                                       style="padding: 8px 12px; font-size: 0.8rem; gap: 8px; font-weight: normal; border-left: none; border-radius: var(--radius-sm);">
-                                        <span class="material-symbols-outlined" style="font-size: 1.1rem;">history</span> Log Backup
-                                    </a>
-                                    <a href="<?= $baseUrl ?? '' ?>admin/backup_settings.php" 
-                                       class="<?= $currentPage === 'backup_settings.php' ? 'active' : '' ?>" 
-                                       style="padding: 8px 12px; font-size: 0.8rem; gap: 8px; font-weight: normal; border-left: none; border-radius: var(--radius-sm);">
-                                        <span class="material-symbols-outlined" style="font-size: 1.1rem;">settings_suggest</span> Pengaturan Backup
-                                    </a>
-                                </div>
-                            <?php endif; ?>
-                        </div>
+                        <a href="<?= $baseUrl ?? '' ?>admin/profil.php"
+                            class="<?= $currentPage === 'profil.php' ? 'active' : '' ?>">
+                            <span class="material-symbols-outlined">account_circle</span> Profil Saya
+                        </a>
+                        <a href="<?= $baseUrl ?? '' ?>admin/settings.php"
+                            class="<?= (strpos($_SERVER['PHP_SELF'], 'settings') !== false || strpos($_SERVER['PHP_SELF'], 'backup') !== false || strpos($_SERVER['PHP_SELF'], 'restore') !== false || strpos($_SERVER['PHP_SELF'], 'export') !== false || strpos($_SERVER['PHP_SELF'], 'log') !== false) ? 'active' : '' ?>">
+                            <span class="material-symbols-outlined">settings</span> Pengaturan Sistem
+                        </a>
                     <?php elseif ($_SESSION['role'] === 'kasir'): ?>
                         <a href="<?= $baseUrl ?? '' ?>kasir/dashboard.php"
                             class="<?= $currentPage === 'dashboard.php' && !isset($_GET['tab']) && strpos($_SERVER['REQUEST_URI'], '/kasir/') !== false ? 'active' : '' ?>">
@@ -225,7 +192,7 @@ if (isset($_SESSION['user_id'])) {
 
                 <!-- Main Content Area -->
             <main class="dashboard-main">
-                <?php if ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'kasir' || $_SESSION['role'] === 'customer'): ?>
+                <?php if ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'kasir'): ?>
                     <!-- ============================================================
                          DASHBOARD TOP NAVBAR — Mobile & Tablet (≤ 992px)
                          Berisi: Hamburger | PadelClub + Nama Halaman | Avatar User
@@ -350,8 +317,8 @@ if (isset($_SESSION['user_id'])) {
                                 <?php elseif (isset($_SESSION['role']) && strcasecmp($_SESSION['role'], 'kasir') === 0): ?>
                                     <a href="<?= $baseUrl ?? '' ?>kasir/dashboard.php" class="btn-pill">Dashboard Kasir</a>
                                 <?php else: ?>
-                                    <a href="<?= $baseUrl ?? '' ?>dashboarduser.php" class="btn-pill">Dashboard Saya</a>
-                                    <a href="<?= $baseUrl ?? '' ?>booking.php" class="btn-pill primary" style="background:var(--blue); border-color:var(--blue); color:#fff; box-shadow:none; margin-right:8px;">Booking</a>
+                                    <a href="<?= $baseUrl ?? '' ?>dashboarduser.php" class="btn-pill <?= $currentPage === 'dashboarduser.php' ? 'active' : '' ?>">Dashboard</a>
+                                    <a href="<?= $baseUrl ?? '' ?>profil.php" class="btn-pill <?= $currentPage === 'profil.php' ? 'active' : '' ?>">Profil</a>
                                 <?php endif; ?>
                                 <a href="<?= $baseUrl ?? '' ?>logout.php" class="btn-pill btn-logout-danger">Keluar</a>
                             <?php else: ?>
@@ -394,20 +361,12 @@ if (isset($_SESSION['user_id'])) {
                                 </a>
                             <?php else: ?>
                                 <a href="<?= $baseUrl ?? '' ?>dashboarduser.php"
-                                    class="<?= $currentPage === 'dashboarduser.php' && strpos($_SERVER['REQUEST_URI'], 'scroll=riwayat') === false ? 'active' : '' ?>">
+                                    class="<?= $currentPage === 'dashboarduser.php' ? 'active' : '' ?>">
                                     <span class="material-symbols-outlined">dashboard</span> Dashboard
-                                </a>
-                                <a href="<?= $baseUrl ?? '' ?>booking.php"
-                                    class="<?= $currentPage === 'booking.php' ? 'active' : '' ?>">
-                                    <span class="material-symbols-outlined">sports_tennis</span> Booking
-                                </a>
-                                <a href="<?= $baseUrl ?? '' ?>dashboarduser.php?scroll=riwayat"
-                                    class="<?= $currentPage === 'dashboarduser.php' && strpos($_SERVER['REQUEST_URI'], 'scroll=riwayat') !== false ? 'active' : '' ?>">
-                                    <span class="material-symbols-outlined">history</span> Riwayat Booking
                                 </a>
                                 <a href="<?= $baseUrl ?? '' ?>profil.php"
                                     class="<?= $currentPage === 'profil.php' ? 'active' : '' ?>">
-                                    <span class="material-symbols-outlined">account_circle</span> Pengaturan Profil
+                                    <span class="material-symbols-outlined">account_circle</span> Profil
                                 </a>
                             <?php endif; ?>
                             <div class="mobile-nav-divider"></div>

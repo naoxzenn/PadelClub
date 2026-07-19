@@ -68,52 +68,127 @@ $total_pengeluaran = array_sum(array_column(
     array_filter($bookings, fn($b) => $b['status'] !== 'cancelled'),
     'total_harga'
 ));
+
+// Booking Selanjutnya
+$upcoming_bookings = array_filter($bookings, function($b) {
+    return $b['status'] === 'confirmed' && $b['tanggal_booking'] >= date('Y-m-d');
+});
+usort($upcoming_bookings, fn($a, $b) => strcmp($a['tanggal_booking'], $b['tanggal_booking']));
+$next_booking = !empty($upcoming_bookings) ? reset($upcoming_bookings) : null;
 ?>
 <?php include __DIR__ . '/includes/header.php'; ?>
 
-<section class="page-header">
+<section class="page-header" style="padding-top: calc(var(--nav-height) + 36px); padding-bottom: 30px; background: var(--surface-alt); border-bottom: 1px solid var(--border);">
     <div class="container">
-        <h1>Dashboard Saya</h1>
-        <p>Selamat datang, <?= htmlspecialchars($user['nama_lengkap']) ?>!</p>
+        <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--navy); margin-bottom: 6px;">Halo, <?= htmlspecialchars($user['nama_lengkap']) ?>! 👋</h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Selamat datang di Dashboard Akun PadelClub Anda.</p>
     </div>
 </section>
 
-<section class="section">
+<section class="section" style="padding: 32px 0;">
     <div class="container">
 
         <?php if (isset($_GET['msg']) && $_GET['msg'] === 'cancelled'): ?>
-            <div class="alert alert-warning">Booking berhasil dibatalkan.</div>
+            <div class="alert alert-warning" style="margin-bottom: 24px;">Booking berhasil dibatalkan.</div>
         <?php endif; ?>
 
-        <!-- Statistik -->
-        <div class="summary-grid">
-            <div class="summary-box">
-                <div class="number"><?= $total_booking ?></div>
-                <div class="label">Total Booking</div>
+        <!-- Ringkasan Informasi Customer -->
+        <div class="status-kehadiran-grid" style="margin-bottom: 32px;">
+            <div class="summary-box" style="text-align: left; padding: 20px 24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                    <span class="label" style="margin: 0;">Booking Aktif</span>
+                    <span class="material-symbols-outlined" style="color: var(--blue);">event_available</span>
+                </div>
+                <div class="number" style="font-size: 1.8rem;"><?= $booking_aktif ?></div>
             </div>
-            <div class="summary-box">
-                <div class="number"><?= $booking_aktif ?></div>
-                <div class="label">Booking Confirmed</div>
+
+            <div class="summary-box" style="text-align: left; padding: 20px 24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                    <span class="label" style="margin: 0;">Riwayat Booking</span>
+                    <span class="material-symbols-outlined" style="color: var(--green);">history</span>
+                </div>
+                <div class="number" style="font-size: 1.8rem;"><?= $total_booking ?></div>
             </div>
-            <div class="summary-box">
-                <div class="number">Rp <?= number_format($total_pengeluaran, 0, ',', '.') ?></div>
-                <div class="label">Total Pengeluaran</div>
+
+            <div class="summary-box" style="text-align: left; padding: 20px 24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                    <span class="label" style="margin: 0;">Status Pembayaran</span>
+                    <span class="material-symbols-outlined" style="color: #F59E0B;">payments</span>
+                </div>
+                <div class="number" style="font-size: 1.4rem; color: var(--navy);">Rp <?= number_format($total_pengeluaran, 0, ',', '.') ?></div>
+            </div>
+
+            <div class="summary-box" style="text-align: left; padding: 20px 24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                    <span class="label" style="margin: 0;">Booking Selanjutnya</span>
+                    <span class="material-symbols-outlined" style="color: #8B5CF6;">sports_tennis</span>
+                </div>
+                <?php if ($next_booking): ?>
+                    <div style="font-weight: 700; font-size: 0.95rem; color: var(--navy);"><?= date('d M Y', strtotime($next_booking['tanggal_booking'])) ?></div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);"><?= substr($next_booking['jam_mulai'],0,5) ?> - <?= htmlspecialchars($next_booking['nama_lapangan']) ?></div>
+                <?php else: ?>
+                    <div style="font-size: 0.88rem; color: var(--text-muted); font-weight: 500;">Belum Ada</div>
+                <?php endif; ?>
             </div>
         </div>
 
-        <div style="text-align: right; margin-bottom: 16px;">
-            <a href="booking.php" class="btn btn-primary">+ Booking Baru</a>
+        <!-- Quick Action Grid -->
+        <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--navy); margin-bottom: 16px;">Quick Action</h2>
+        <div class="quick-actions-grid" style="margin-bottom: 36px;">
+            <a href="booking.php" class="quick-action-card">
+                <div class="quick-action-top">
+                    <div class="quick-action-icon icon-blue">
+                        <span class="material-symbols-outlined">sports_tennis</span>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 1rem; font-weight: 700; margin: 0 0 4px 0; color: var(--navy);">Booking Lapangan</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Pilih lapangan & waktu main pilihan Anda.</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="#tabel-riwayat" class="quick-action-card">
+                <div class="quick-action-top">
+                    <div class="quick-action-icon icon-green">
+                        <span class="material-symbols-outlined">receipt_long</span>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 1rem; font-weight: 700; margin: 0 0 4px 0; color: var(--navy);">Riwayat Booking</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Lihat detail tiket, invoice, & status pesanan.</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="profil.php" class="quick-action-card">
+                <div class="quick-action-top">
+                    <div class="quick-action-icon icon-purple">
+                        <span class="material-symbols-outlined">manage_accounts</span>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 1rem; font-weight: 700; margin: 0 0 4px 0; color: var(--navy);">Lihat Profil</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Pusat pengaturan akun & informasi pribadi.</p>
+                    </div>
+                </div>
+            </a>
         </div>
 
-        <!-- Riwayat Booking -->
-        <div class="card">
-            <h2>Riwayat Booking</h2>
+        <!-- Riwayat Booking Table -->
+        <div class="card" style="padding: 24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap:wrap; gap:12px;">
+                <div>
+                    <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--navy); margin: 0 0 4px 0;">Riwayat Booking Anda</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Daftar seluruh transaksi pemesanan lapangan PadelClub.</p>
+                </div>
+                <a href="booking.php" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.85rem; display:inline-flex; align-items:center; gap:6px;">
+                    <span class="material-symbols-outlined" style="font-size: 1.1rem;">add</span> Booking Lapangan
+                </a>
+            </div>
+
             <?php if (empty($bookings)): ?>
                 <div class="alert alert-info">
-                    Belum ada booking. <a href="booking.php">Booking sekarang</a>!
+                    Belum ada booking. <a href="booking.php" style="font-weight:700;">Booking sekarang</a>!
                 </div>
             <?php else: ?>
-                
                 <div class="table-responsive">
                     <table id="tabel-riwayat">
                         <thead>
@@ -189,31 +264,6 @@ $total_pengeluaran = array_sum(array_column(
                     </table>
                 </div>
             <?php endif; ?>
-        </div>
-
-
-        <!-- Info Akun -->
-
-        <div class="card">
-            <h2>Informasi Akun</h2>
-            <div class="detail-box">
-                <div class="detail-row">
-                    <span class="label">Nama Lengkap</span>
-                    <span class="value"><?= htmlspecialchars($user['nama_lengkap']) ?></span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Email</span>
-                    <span class="value"><?= htmlspecialchars($user['email']) ?></span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Nomor Telepon</span>
-                    <span class="value"><?= htmlspecialchars($user['nomor_telepon'] ?? '-') ?></span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Bergabung Sejak</span>
-                    <span class="value"><?= date('d F Y', strtotime($user['created_at'])) ?></span>
-                </div>
-            </div>
         </div>
 
     </div>

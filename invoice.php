@@ -65,6 +65,11 @@ ob_start();
     <meta charset="UTF-8">
     <title>Invoice PadelClub - <?= htmlspecialchars($code) ?></title>
     <style>
+        html, body {
+            max-width: 100vw;
+            overflow-x: hidden;
+        }
+
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             color: #1e293b;
@@ -72,6 +77,12 @@ ob_start();
             line-height: 1.5;
             margin: 0;
             padding: 0;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .invoice-box {
@@ -302,36 +313,38 @@ ob_start();
             </tr>
         </table>
 
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th>Rincian Item</th>
-                    <th>Tipe</th>
-                    <th style="text-align: right;">Biaya</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>
-                        <strong>Sewa Lapangan: <?= htmlspecialchars($booking['nama_lapangan']) ?></strong><br>
-                        <small>Tanggal: <?= date('d/m/Y', strtotime($booking['tanggal_booking'])) ?> | Jam:
-                            <?= substr($booking['jam_mulai'], 0, 5) ?> - <?= substr($booking['jam_selesai'], 0, 5) ?>
-                            WIB</small>
-                    </td>
-                    <td><?= $booking['tipe_lapangan'] ?></td>
-                    <td style="text-align: right;">Rp
-                        <?= number_format($booking['total_harga'] - ($booking['sewa_raket'] ? 50000 : 0), 0, ',', '.') ?>
-                    </td>
-                </tr>
-                <?php if ($booking['sewa_raket']): ?>
+        <div class="table-responsive">
+            <table class="items-table">
+                <thead>
                     <tr>
-                        <td><strong>Sewa Raket Tambahan</strong><br><small>1 Set Raket Padel Premium</small></td>
-                        <td>Tambahan</td>
-                        <td style="text-align: right;">Rp 50.000</td>
+                        <th>Rincian Item</th>
+                        <th>Tipe</th>
+                        <th style="text-align: right;">Biaya</th>
                     </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <strong>Sewa Lapangan: <?= htmlspecialchars($booking['nama_lapangan']) ?></strong><br>
+                            <small>Tanggal: <?= date('d/m/Y', strtotime($booking['tanggal_booking'])) ?> | Jam:
+                                <?= substr($booking['jam_mulai'], 0, 5) ?> - <?= substr($booking['jam_selesai'], 0, 5) ?>
+                                WIB</small>
+                        </td>
+                        <td><?= $booking['tipe_lapangan'] ?></td>
+                        <td style="text-align: right;">Rp
+                            <?= number_format($booking['total_harga'] - ($booking['sewa_raket'] ? 50000 : 0), 0, ',', '.') ?>
+                        </td>
+                    </tr>
+                    <?php if ($booking['sewa_raket']): ?>
+                        <tr>
+                            <td><strong>Sewa Raket Tambahan</strong><br><small>1 Set Raket Padel Premium</small></td>
+                            <td>Tambahan</td>
+                            <td style="text-align: right;">Rp 50.000</td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
 
         <div class="summary-container">
             <div class="summary-left">

@@ -227,6 +227,9 @@ p {
     max-width: 1280px;
     margin: 0 auto;
     padding: 0 24px;
+    /* Pastikan container tidak melebihi viewport */
+    width: 100%;
+    box-sizing: border-box;
 }
 
 @media (min-width: 1024px) {
@@ -235,8 +238,15 @@ p {
     }
 }
 
+@media (max-width: 480px) {
+    .container {
+        padding: 0 16px;
+    }
+}
+
 .section {
     padding: 64px 0;
+    overflow-x: hidden; /* Mencegah child elements menyebabkan body overflow */
 }
 
 .section-white {
@@ -300,6 +310,12 @@ p {
     padding: 32px;
     box-shadow: var(--shadow-sm);
     margin-bottom: 24px;
+    /* Responsive: mencegah card melewati batas viewport */
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .card h2 {
@@ -582,24 +598,46 @@ textarea:focus {
 }
 
 /* ---------- Tables ---------- */
-.table-responsive {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    box-sizing: border-box;
+/* Global body overflow prevention */
+html, body {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
 }
 
-.table-responsive table {
-    min-width: 600px;
-    width: 100%;
+.dashboard-container,
+.dashboard-main,
+.dashboard-body,
+.container,
+.card {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* ---------- Tables ---------- */
+.table-responsive {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    box-sizing: border-box !important;
+    display: block !important;
+    margin-bottom: 1rem;
+}
+
+.table-responsive table,
+.table-responsive > table {
+    width: 100% !important;
+    min-width: 720px !important;
+    max-width: none !important;
+    border-collapse: collapse !important;
+    table-layout: auto !important;
 }
 
 table {
     width: 100%;
-    max-width: 100%;
     border-collapse: collapse;
     font-size: .88rem;
 }
@@ -611,7 +649,7 @@ thead {
 th {
     text-align: left;
     padding: 14px 16px;
-    font-size: .7rem;
+    font-size: .75rem;
     font-weight: 700;
     letter-spacing: .06em;
     text-transform: uppercase;
@@ -623,6 +661,25 @@ td {
     padding: 14px 16px;
     border-top: 1px solid var(--border);
     vertical-align: middle;
+}
+
+/* Pertahankan ukuran normal tombol, badge, dan status dalam sel tabel */
+.table-responsive th,
+.table-responsive td {
+    white-space: nowrap;
+}
+
+.table-responsive .btn,
+.table-responsive .btn-sm {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+}
+
+.table-responsive .badge,
+.table-responsive span[class*="status-"],
+.table-responsive span[class*="role-badge"] {
+    white-space: nowrap !important;
+    display: inline-block;
 }
 
 tbody tr:hover {
@@ -1232,6 +1289,8 @@ tbody tr:hover {
     display: flex;
     min-height: 100vh;
     position: relative;
+    overflow-x: hidden; /* Mencegah child elements menyebabkan body overflow */
+    width: 100%;
 }
 
 .dashboard-sidebar {
@@ -1355,6 +1414,9 @@ tbody tr:hover {
     display: flex;
     flex-direction: column;
     width: calc(100% - 260px);
+    /* Mencegah konten dalam (tabel, card) mendorong body lebih lebar dari viewport */
+    overflow-x: hidden;
+    min-width: 0;
 }
 
 .dashboard-header {
@@ -1414,6 +1476,10 @@ tbody tr:hover {
     padding: 32px;
     flex: 1;
     background: var(--surface);
+    /* Viewport lock: hanya table-responsive yang boleh scroll horizontal */
+    overflow-x: hidden;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .badge-status {
@@ -1437,7 +1503,8 @@ tbody tr:hover {
 
 .dashboard-stat-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    /* minmax(min(100%, 220px), 1fr) — aman untuk layar kecil 320px sekalipun */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
     gap: 20px;
     margin-bottom: 30px;
 }
@@ -1506,6 +1573,18 @@ tbody tr:hover {
     color: var(--text-muted);
     font-weight: 500;
     margin-top: 4px;
+}
+
+/* .stat-card-full: untuk card yang perlu span 2 kolom di desktop,
+   tapi kembali ke 1 kolom di layar kecil agar tidak overflow */
+.stat-card-full {
+    grid-column: span 2;
+}
+
+@media (max-width: 576px) {
+    .stat-card-full {
+        grid-column: span 1 !important;
+    }
 }
 
 /* ===================================================
@@ -4688,4 +4767,584 @@ textarea.invalid {
 .quick-action-card:hover .quick-action-footer {
     gap: 10px;
     color: var(--blue-dark);
+}
+
+/* ==========================================================================
+   REDESIGNED MODERN PROFILE PAGE (Single Big Card, Label:Value Aligned)
+   ========================================================================== */
+
+/* Profile section offset spacing */
+.profile-page-section {
+    padding-top: calc(var(--nav-height, 76px) + 20px);
+    padding-bottom: 32px;
+}
+
+/* Remove duplicate top padding inside dashboard container (Admin & Kasir) */
+.dashboard-content .profile-page-section,
+.dashboard-content .section {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.profile-redesign-container {
+    max-width: 880px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Single Big Card */
+.profile-main-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg, 16px);
+    box-shadow: var(--shadow-md, 0 10px 25px -5px rgba(0, 0, 0, 0.05));
+    padding: 0;
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+/* Card Header Section */
+.profile-card-header {
+    padding: 32px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.06) 0%, rgba(34, 197, 94, 0.04) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.dark-mode .profile-card-header {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(30, 41, 59, 0.5) 100%);
+}
+
+.profile-avatar-info-group {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.profile-avatar-wrapper {
+    position: relative;
+    width: 84px;
+    height: 84px;
+    min-width: 84px;
+    min-height: 84px;
+    border-radius: 50%;
+    background: var(--gradient, linear-gradient(135deg, #0ea5e9, #22c55e));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 2.2rem;
+    font-weight: 800;
+    box-shadow: 0 8px 20px -4px rgba(14, 165, 233, 0.3);
+    border: 3px solid var(--card-bg);
+    overflow: hidden;
+}
+
+.profile-avatar-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-identity-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.profile-user-name {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--navy);
+    line-height: 1.2;
+    margin: 0;
+}
+
+.profile-meta-badges {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.profile-role-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 4px 12px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.profile-role-badge.admin {
+    background: rgba(14, 165, 233, 0.15);
+    color: #0ea5e9;
+    border: 1px solid rgba(14, 165, 233, 0.3);
+}
+
+.profile-role-badge.kasir {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.profile-role-badge.customer,
+.profile-role-badge.user {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.profile-status-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.dark-mode .profile-status-badge {
+    color: #4ade80;
+    background: rgba(34, 197, 94, 0.2);
+}
+
+.profile-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* Single Big Card Body Section */
+.profile-card-body {
+    padding: 32px;
+}
+
+.profile-section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-section-title span {
+    color: var(--blue);
+}
+
+/* Grid Layout for Aligned Colons */
+.profile-info-grid {
+    display: grid;
+    grid-template-columns: minmax(140px, 180px) 24px 1fr;
+    align-items: center;
+    width: 100%;
+}
+
+.profile-info-row-item {
+    display: contents;
+}
+
+.profile-info-label {
+    grid-column: 1;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    padding: 18px 0;
+    white-space: nowrap;
+}
+
+.profile-info-colon {
+    grid-column: 2;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 18px 0;
+}
+
+.profile-info-value {
+    grid-column: 3;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--navy);
+    padding: 18px 0;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Thin Divider */
+.profile-info-divider {
+    grid-column: 1 / -1;
+    height: 1px;
+    background-color: var(--border);
+    margin: 0;
+    border: none;
+}
+
+/* Profile Modal Dialogs */
+.profile-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.profile-modal-box {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg, 16px);
+    width: 100%;
+    max-width: 480px;
+    box-shadow: var(--shadow-md, 0 20px 40px -10px rgba(0,0,0,0.5));
+    overflow: hidden;
+    animation: profileModalSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes profileModalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.profile-modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.profile-modal-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--navy);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.profile-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+}
+
+.profile-modal-close:hover {
+    color: var(--navy);
+}
+
+.profile-modal-body {
+    padding: 24px;
+}
+
+.profile-modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--surface-alt, rgba(0,0,0,0.02));
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .profile-card-header {
+        padding: 24px 20px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+    }
+    
+    .profile-header-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .profile-header-actions .btn {
+        width: 100%;
+        justify-content: center;
+        font-size: 0.85rem;
+        padding: 8px 12px;
+    }
+
+/* Inline colon for mobile view */
+.profile-colon-inline {
+    display: none !important;
+}
+
+@media (min-width: 769px) {
+    .profile-colon-inline {
+        display: none !important;
+    }
+    .profile-info-colon {
+        display: none !important;
+    }
+    .profile-value-text-wrap {
+        display: inline !important;
+    }
+    .profile-badge-sub-row {
+        display: inline-flex !important;
+        margin-left: 6px !important;
+    }
+}
+
+/* Mobile & Tablet layout (320px - 768px): Vertical stacked layout */
+@media (max-width: 768px) {
+
+    .profile-page-section {
+        padding-top: calc(var(--nav-height, 76px) + 16px) !important;
+        padding-bottom: 20px !important;
+    }
+
+    .dashboard-content .profile-page-section,
+    .dashboard-content .section {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    .profile-notice-banner {
+        margin-top: 0 !important;
+        margin-bottom: 16px !important;
+    }
+
+    .profile-card-header {
+        padding: 24px 20px !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 16px !important;
+    }
+
+    .profile-avatar-info-group {
+        width: 100% !important;
+        gap: 16px !important;
+    }
+
+    .profile-user-name {
+        font-size: 1.3rem !important;
+        text-align: left !important;
+    }
+
+    .profile-header-actions {
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+    }
+
+    .profile-header-actions .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        font-size: 0.85rem !important;
+        padding: 10px 12px !important;
+    }
+
+    .profile-card-body {
+        padding: 20px 16px !important;
+    }
+
+    /* Convert Grid to Column Flexbox */
+    .profile-info-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 0 !important;
+    }
+
+    .profile-info-row-item {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        text-align: left !important;
+        padding: 12px 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Label always on top, left aligned */
+    .profile-info-label {
+        font-size: 0.88rem !important;
+        font-weight: 600 !important;
+        color: var(--text-muted) !important;
+        text-align: left !important;
+        padding: 0 !important;
+        margin-bottom: 4px !important;
+        width: 100% !important;
+    }
+
+    /* Hide middle grid colon on mobile */
+    .profile-info-colon {
+        display: none !important;
+    }
+
+    /* Inline colon before value text on mobile */
+    .profile-colon-inline {
+        display: none !important;
+    }
+
+    /* Value container: stacked vertically, left aligned */
+    .profile-info-value {
+        font-size: 0.95rem !important;
+        font-weight: 600 !important;
+        color: var(--navy) !important;
+        text-align: left !important;
+        padding: 0 !important;
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 4px !important;
+        word-break: break-word !important;
+        overflow-wrap: anywhere !important;
+    }
+
+    .profile-value-text-wrap {
+        display: block !important;
+        text-align: left !important;
+        width: 100% !important;
+    }
+
+    .profile-value-text {
+        font-size: 0.95rem !important;
+        font-weight: 600 !important;
+        color: var(--navy) !important;
+        text-align: left !important;
+    }
+
+    /* Sub-row for badges: sits directly UNDER the value text, small size, left aligned */
+    .profile-badge-sub-row {
+        margin-top: 4px !important;
+        margin-left: 0 !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        width: fit-content !important;
+        max-width: 100% !important;
+    }
+
+    .profile-info-value .badge,
+    .profile-info-value span[class*="badge"],
+    .profile-info-value span[style*="border-radius"],
+    .profile-badge-sub-row .badge {
+        font-size: 0.72rem !important;
+        padding: 3px 8px !important;
+        border-radius: 12px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        width: fit-content !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Dividers between items */
+    .profile-info-divider {
+        display: block !important;
+        width: 100% !important;
+        height: 1px !important;
+        background-color: var(--border) !important;
+        margin: 0 !important;
+        border: none !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-header-actions {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ===================================================
+   RESPONSIVE MOBILE FIXES — ADMIN PAGES
+   Memastikan card, grid, dan layout admin tidak overflow
+   body pada layar kecil (320px - 480px)
+   =================================================== */
+@media (max-width: 576px) {
+
+    /* Kurangi padding dashboard-content agar card tidak terlalu sempit */
+    .dashboard-content {
+        padding: 12px !important;
+    }
+
+    /* Card di dalam dashboard harus mengikuti lebar parent sepenuhnya */
+    .dashboard-content .card {
+        padding: 16px !important;
+        border-radius: var(--radius-md) !important;
+        margin-bottom: 16px !important;
+    }
+
+    /* dashboard-stat-card: paksa ke 1 kolom di layar sangat kecil */
+    .dashboard-stat-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    /* Stat card yang di-span 2 kolom oleh inline style tidak boleh overflow */
+    .dashboard-stat-card[style*="grid-column"] {
+        grid-column: 1 !important; /* Reset span pada layar kecil */
+    }
+
+    /* admin-grid-layout: paksa single column */
+    .admin-grid-layout {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+    }
+
+    /* Chart container: batasi tinggi agar tidak overflow */
+    .card canvas {
+        max-height: 280px;
+    }
+
+    /* Alert: sesuaikan padding */
+    .alert {
+        padding: 12px 14px;
+        font-size: 0.85rem;
+    }
+
+    /* table-responsive: pastikan hanya tabel yang scroll, bukan body */
+    .table-responsive {
+        display: block !important;
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
 }

@@ -175,7 +175,7 @@ include __DIR__ . '/../includes/header.php';
                 <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;"><?= $totalLogs ?> Catatan Ditemukan</span>
             </div>
             
-            <div style="overflow-x: auto;">
+            <div class="table-responsive">
                 <table style="width: 100%; border-collapse: collapse; text-align: left; margin: 0;">
                     <thead>
                         <tr style="background: var(--surface-alt);">

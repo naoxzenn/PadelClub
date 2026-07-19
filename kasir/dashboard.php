@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'kasir') {
     header('Location: ../login.php');
     exit;
@@ -419,42 +421,188 @@ $qrisPayments = mysqli_fetch_all(mysqli_query($conn, "
 
         <!-- TAB: PROFIL -->
         <div id="tab-profil" class="tab-content">
-            <div class="card">
-                <h2>Profil Kasir</h2>
-                <p style="color: var(--text-muted); margin-bottom: 20px;">Informasi akun kasir Anda yang terdaftar pada sistem PadelClub.</p>
-                
-                <?php
-                $user_id = $_SESSION['user_id'];
-                $stmt_prof = mysqli_prepare($conn, "SELECT nama_lengkap, email, nomor_telepon, role, created_at FROM users WHERE id = ?");
-                if ($stmt_prof) {
-                    mysqli_stmt_bind_param($stmt_prof, 'i', $user_id);
-                    mysqli_stmt_execute($stmt_prof);
-                    $profil_res = mysqli_stmt_get_result($stmt_prof);
-                    $profil = mysqli_fetch_assoc($profil_res);
-                    mysqli_stmt_close($stmt_prof);
+            <?php
+            $user_id = $_SESSION['user_id'];
+            $stmt_prof = mysqli_prepare($conn, "SELECT * FROM users WHERE id = ?");
+            if ($stmt_prof) {
+                mysqli_stmt_bind_param($stmt_prof, 'i', $user_id);
+                mysqli_stmt_execute($stmt_prof);
+                $profil_res = mysqli_stmt_get_result($stmt_prof);
+                $profil = mysqli_fetch_assoc($profil_res);
+                mysqli_stmt_close($stmt_prof);
+            }
+            if (!function_exists('formatTanggalIndonesia')) {
+                function formatTanggalIndonesia($datetime) {
+                    if (empty($datetime)) return '-';
+                    $bulan = [
+                        1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+                    ];
+                    $time = strtotime($datetime);
+                    $tgl = date('j', $time);
+                    $bln = (int)date('n', $time);
+                    $thn = date('Y', $time);
+                    return $tgl . ' ' . $bulan[$bln] . ' ' . $thn;
                 }
-                ?>
-                <?php if ($profil): ?>
-                    <div style="max-width: 500px; width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); gap: 12px 24px; padding: 20px 0;">
-                        <div style="font-weight: 600; color: var(--navy); border-bottom: 1px solid var(--border); padding-bottom: 8px;">Nama Lengkap</div>
-                        <div style="border-bottom: 1px solid var(--border); padding-bottom: 8px;"><?= htmlspecialchars($profil['nama_lengkap']) ?></div>
-                        
-                        <div style="font-weight: 600; color: var(--navy); border-bottom: 1px solid var(--border); padding-bottom: 8px;">Alamat Email</div>
-                        <div style="border-bottom: 1px solid var(--border); padding-bottom: 8px;"><?= htmlspecialchars($profil['email']) ?></div>
-                        
-                        <div style="font-weight: 600; color: var(--navy); border-bottom: 1px solid var(--border); padding-bottom: 8px;">Nomor Telepon</div>
-                        <div style="border-bottom: 1px solid var(--border); padding-bottom: 8px;"><?= htmlspecialchars($profil['nomor_telepon'] ?? '-') ?></div>
-                        
-                        <div style="font-weight: 600; color: var(--navy); border-bottom: 1px solid var(--border); padding-bottom: 8px;">Peran (Role)</div>
-                        <div style="border-bottom: 1px solid var(--border); padding-bottom: 8px;"><span class="role-badge kasir" style="background:#3B82F6; color:#fff; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:600;">Kasir</span></div>
-                        
-                        <div style="font-weight: 600; color: var(--navy); padding-bottom: 8px;">Bergabung Sejak</div>
-                        <div style="padding-bottom: 8px;"><?= date('d F Y, H:i', strtotime($profil['created_at'])) ?></div>
+            }
+            ?>
+            <?php if ($profil): ?>
+                <!-- SATU CARD BESAR UTAMA -->
+                <div class="profile-main-card" style="max-width: 880px; margin: 0 auto;">
+
+                    <!-- HEADER AKUN -->
+                    <div class="profile-card-header">
+                        <div class="profile-avatar-info-group">
+                            <div class="profile-avatar-wrapper">
+                                <?php 
+                                $dispAvatar = $profil['avatar'] ?? '';
+                                $dispName = $profil['nama_lengkap'] ?? $_SESSION['nama'] ?? 'Kasir';
+                                if (!empty($dispAvatar)): 
+                                    if (str_starts_with($dispAvatar, 'http')): ?>
+                                        <img src="<?= htmlspecialchars($dispAvatar) ?>" alt="Avatar">
+                                    <?php else: ?>
+                                        <img src="../uploads/profile/<?= htmlspecialchars($dispAvatar) ?>" alt="Avatar">
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <?= strtoupper(substr($dispName, 0, 1)) ?>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="profile-identity-details">
+                                <h2 class="profile-user-name"><?= htmlspecialchars($dispName) ?></h2>
+                                <div class="profile-meta-badges">
+                                    <span class="profile-role-badge kasir">
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">verified_user</span>
+                                        Kasir
+                                    </span>
+
+                                    <span class="profile-status-badge">
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
+                                        Aktif
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tombol Edit Profil & Tombol Ganti Password (Mengarahkan ke halaman profil utama) -->
+                        <div class="profile-header-actions">
+                            <a href="../profil.php" class="btn btn-primary">
+                                <span class="material-symbols-outlined">edit</span>
+                                Edit Profil
+                            </a>
+
+                            <a href="../profil.php" class="btn btn-outline">
+                                <span class="material-symbols-outlined">key</span>
+                                Ganti Password
+                            </a>
+                        </div>
                     </div>
-                <?php else: ?>
-                    <div class="alert alert-danger">Gagal mengambil data profil kasir.</div>
-                <?php endif; ?>
-            </div>
+
+                    <!-- INFORMASI AKUN (Format Label : Value dengan Aligned Colons dan Thin Dividers) -->
+                    <div class="profile-card-body">
+                        <div class="profile-section-title">
+                            <span class="material-symbols-outlined">manage_accounts</span>
+                            Informasi Akun
+                        </div>
+
+                        <div class="profile-info-grid">
+
+                            <!-- 1. Nama -->
+                            <div class="profile-info-row-item">
+                                <div class="profile-info-label">Nama</div>
+                                <div class="profile-info-colon"></div>
+                                <div class="profile-info-value">
+                                    <div class="profile-value-text-wrap">
+                                        <span class="profile-value-text"><?= htmlspecialchars($profil['nama_lengkap'] ?? '-') ?></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="profile-info-divider"></div>
+
+                            <!-- 2. Username -->
+                            <div class="profile-info-row-item">
+                                <div class="profile-info-label">Username</div>
+                                <div class="profile-info-colon"></div>
+                                <div class="profile-info-value">
+                                    <div class="profile-value-text-wrap">
+                                        <span class="profile-value-text">
+                                            <?php 
+                                            $dispUsername = !empty($profil['username']) ? $profil['username'] : explode('@', $profil['email'])[0];
+                                            echo htmlspecialchars($dispUsername);
+                                            ?>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="profile-info-divider"></div>
+
+                            <!-- 3. Email -->
+                            <div class="profile-info-row-item">
+                                <div class="profile-info-label">Email</div>
+                                <div class="profile-info-colon"></div>
+                                <div class="profile-info-value">
+                                    <div class="profile-value-text-wrap">
+                                        <span class="profile-value-text"><?= htmlspecialchars($profil['email'] ?? '-') ?></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="profile-info-divider"></div>
+
+                            <!-- 4. Nomor HP -->
+                            <div class="profile-info-row-item">
+                                <div class="profile-info-label">Nomor HP</div>
+                                <div class="profile-info-colon"></div>
+                                <div class="profile-info-value">
+                                    <div class="profile-value-text-wrap">
+                                        <span class="profile-value-text">
+                                            <?php 
+                                            $noHp = $profil['nomor_telepon'] ?? $profil['phone'] ?? '-';
+                                            echo htmlspecialchars(!empty($noHp) ? $noHp : '-');
+                                            ?>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="profile-info-divider"></div>
+
+                            <!-- 5. Status -->
+                            <div class="profile-info-row-item">
+                                <div class="profile-info-label">Status</div>
+                                <div class="profile-info-colon"></div>
+                                <div class="profile-info-value">
+                                    <div class="profile-value-text-wrap">
+                                        <span class="profile-value-text" style="color: #22c55e; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+                                            <span style="width: 8px; height: 8px; border-radius: 50%; background-color: #22c55e; display: inline-block;"></span>
+                                            Aktif
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="profile-info-divider"></div>
+
+                            <!-- 6. Tanggal Gabung -->
+                            <div class="profile-info-row-item">
+                                <div class="profile-info-label">Tanggal Gabung</div>
+                                <div class="profile-info-colon"></div>
+                                <div class="profile-info-value">
+                                    <div class="profile-value-text-wrap">
+                                        <span class="profile-value-text"><?= formatTanggalIndonesia($profil['created_at'] ?? date('Y-m-d')) ?></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            <?php else: ?>
+                <div class="alert alert-danger">Gagal mengambil data profil kasir.</div>
+            <?php endif; ?>
         </div>
 
     </div>
