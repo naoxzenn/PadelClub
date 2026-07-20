@@ -15,18 +15,23 @@ require_once __DIR__ . '/vendor/autoload.php';
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
-$code = $_GET['code'] ?? '';
+$param = $_GET['t'] ?? $_GET['code'] ?? '';
 
-if (empty($code)) {
+if (empty($param)) {
     die("Kode booking tidak valid.");
 }
 
 $model = new BookingModel($pdo);
-$booking = $model->getBookingByCode($code);
+$booking = $model->getBookingByCheckinToken($param);
+if (!$booking) {
+    $booking = $model->getBookingByCode($param);
+}
 
 if (!$booking) {
     die("Booking tidak ditemukan.");
 }
+
+$code = $booking['booking_code'] ?? $param;
 
 // Security Validation
 if ($_SESSION['role'] === 'customer' && $booking['user_id'] != $_SESSION['user_id']) {
@@ -51,8 +56,9 @@ if ($metodeBayar === 'QRIS') {
 }
 
 
-// Generate base64 QR Code
-$checkinUrl = QRHelper::generateCheckinUrl($code);
+// Generate base64 QR Code using checkin_token
+$token = getOrCreateCheckinToken($booking, $pdo);
+$checkinUrl = QRHelper::generateCheckinUrl($token);
 $qrDataUri = QRHelper::generateQRCodeDataUri($checkinUrl);
 
 // Render HTML

@@ -11,18 +11,23 @@ require_once __DIR__ . '/config/koneksi.php';
 require_once __DIR__ . '/models/BookingModel.php';
 require_once __DIR__ . '/helpers/QRHelper.php';
 
-$code = $_GET['code'] ?? '';
+$param = $_GET['t'] ?? $_GET['code'] ?? '';
 
-if (empty($code)) {
-    die("Kode booking tidak valid.");
+if (empty($param)) {
+    die("Kode booking / token tidak valid.");
 }
 
 $model = new BookingModel($pdo);
-$booking = $model->getBookingByCode($code);
+$booking = $model->getBookingByCheckinToken($param);
+if (!$booking) {
+    $booking = $model->getBookingByCode($param);
+}
 
 if (!$booking) {
     die("Booking tidak ditemukan.");
 }
+
+$code = $booking['booking_code'] ?? 'PADEL';
 
 // Security: Customer can only download their own QR Code
 if ($_SESSION['role'] === 'customer' && $booking['user_id'] != $_SESSION['user_id']) {
@@ -34,7 +39,12 @@ if ($booking['payment_status'] !== 'Verified') {
     die("QR Code belum tersedia. Pembayaran belum diverifikasi.");
 }
 
-$checkinUrl = QRHelper::generateCheckinUrl($code);
+$token = getOrCreateCheckinToken($booking, $pdo);
+if (empty($token)) {
+    die("Gagal menghasilkan token QR.");
+}
+
+$checkinUrl = QRHelper::generateCheckinUrl($token);
 $pngBytes = QRHelper::generateQRCodeBytes($checkinUrl);
 
 if (empty($pngBytes)) {

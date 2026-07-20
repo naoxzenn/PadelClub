@@ -190,8 +190,15 @@ if ($check_bookings) {
     if (!in_array('booking_code', $booking_cols)) {
         mysqli_query($conn, "ALTER TABLE bookings ADD COLUMN booking_code VARCHAR(40) UNIQUE NULL AFTER status");
     }
+    if (!in_array('checkin_token', $booking_cols)) {
+        mysqli_query($conn, "ALTER TABLE bookings ADD COLUMN checkin_token CHAR(64) NULL AFTER booking_code");
+        mysqli_query($conn, "ALTER TABLE bookings ADD KEY idx_checkin_token (checkin_token)");
+    }
+    if (!in_array('checkin_generated_at', $booking_cols)) {
+        mysqli_query($conn, "ALTER TABLE bookings ADD COLUMN checkin_generated_at DATETIME NULL AFTER checkin_token");
+    }
     if (!in_array('payment_status', $booking_cols)) {
-        mysqli_query($conn, "ALTER TABLE bookings ADD COLUMN payment_status ENUM('Pending', 'Verified', 'Rejected') DEFAULT 'Pending' AFTER booking_code");
+        mysqli_query($conn, "ALTER TABLE bookings ADD COLUMN payment_status ENUM('Pending', 'Verified', 'Rejected') DEFAULT 'Pending' AFTER checkin_generated_at");
     }
     if (!in_array('checkin_status', $booking_cols)) {
         mysqli_query($conn, "ALTER TABLE bookings ADD COLUMN checkin_status ENUM('Not Checked In', 'Checked In') DEFAULT 'Not Checked In' AFTER payment_status");
@@ -235,7 +242,7 @@ if (!function_exists('updateBookingVerification')) {
         }
 
         // Fetch current booking & payment details
-        $resB = mysqli_query($conn, "SELECT total_harga, booking_code FROM bookings WHERE id = $booking_id");
+        $resB = mysqli_query($conn, "SELECT total_harga, booking_code, checkin_token FROM bookings WHERE id = $booking_id");
         if (!$resB || mysqli_num_rows($resB) == 0) return false;
         $bookingRow = mysqli_fetch_assoc($resB);
         $total_harga = (float)$bookingRow['total_harga'];
@@ -246,6 +253,13 @@ if (!function_exists('updateBookingVerification')) {
         $now = date('Y-m-d H:i:s');
 
         if ($normalizedStatus === 'confirmed') {
+            // Check checkin_token generation (must be generated once with random_bytes(32))
+            $tokenUpdateSql = "";
+            if (empty($bookingRow['checkin_token'])) {
+                $newToken = bin2hex(random_bytes(32));
+                $tokenUpdateSql = ", checkin_token = '$newToken', checkin_generated_at = '$now'";
+            }
+
             // 1. Update Bookings table
             $code = $bookingRow['booking_code'];
             if (empty($code)) {
@@ -263,6 +277,7 @@ if (!function_exists('updateBookingVerification')) {
                 payment_status = 'Verified',
                 verified_at = '$now',
                 verified_by = $vby
+                $tokenUpdateSql
                 WHERE id = $booking_id");
 
             // 2. Sync Payments table
@@ -388,6 +403,17 @@ $fallback_res = mysqli_query($conn, "SELECT id FROM bookings WHERE status = 'con
 if ($fallback_res && mysqli_num_rows($fallback_res) > 0) {
     while ($row = mysqli_fetch_assoc($fallback_res)) {
         updateBookingVerification($conn, $row['id'], 'confirmed', null, false);
+    }
+}
+
+// ---- AUTO SINKRONISASI TOKEN UNTUK BOOKING VERIFIED LAMA ----
+$fallback_token_res = mysqli_query($conn, "SELECT id FROM bookings WHERE payment_status = 'Verified' AND (checkin_token IS NULL OR checkin_token = '')");
+if ($fallback_token_res && mysqli_num_rows($fallback_token_res) > 0) {
+    while ($row = mysqli_fetch_assoc($fallback_token_res)) {
+        $bid = (int)$row['id'];
+        $t = bin2hex(random_bytes(32));
+        $now = date('Y-m-d H:i:s');
+        mysqli_query($conn, "UPDATE bookings SET checkin_token = '$t', checkin_generated_at = '$now' WHERE id = $bid AND (checkin_token IS NULL OR checkin_token = '')");
     }
 }
 ?>

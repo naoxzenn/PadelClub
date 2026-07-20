@@ -20,13 +20,36 @@ class BookingModel {
      */
     public function getBookingByCode($booking_code) {
         $stmt = $this->pdo->prepare("
-            SELECT b.*, c.nama_lapangan, c.tipe_lapangan, u.nama_lengkap, u.email, u.nomor_telepon
+            SELECT b.*, c.nama_lapangan, c.tipe_lapangan, u.nama_lengkap, u.email, u.nomor_telepon,
+                   p.nama_lengkap as checkin_by_name, v.nama_lengkap as verified_by_name
             FROM bookings b
             JOIN courts c ON b.court_id = c.id
             JOIN users u ON b.user_id = u.id
+            LEFT JOIN users p ON b.checkin_by = p.id
+            LEFT JOIN users v ON b.verified_by = v.id
             WHERE b.booking_code = :booking_code
         ");
         $stmt->execute([':booking_code' => $booking_code]);
+        return $stmt->fetch();
+    }
+
+    /**
+     * Fetch booking by checkin_token
+     * @param string $token
+     * @return array|false
+     */
+    public function getBookingByCheckinToken($token) {
+        $stmt = $this->pdo->prepare("
+            SELECT b.*, c.nama_lapangan, c.tipe_lapangan, u.nama_lengkap, u.email, u.nomor_telepon,
+                   p.nama_lengkap as checkin_by_name, v.nama_lengkap as verified_by_name
+            FROM bookings b
+            JOIN courts c ON b.court_id = c.id
+            JOIN users u ON b.user_id = u.id
+            LEFT JOIN users p ON b.checkin_by = p.id
+            LEFT JOIN users v ON b.verified_by = v.id
+            WHERE b.checkin_token = :token
+        ");
+        $stmt->execute([':token' => trim($token)]);
         return $stmt->fetch();
     }
 
@@ -37,10 +60,13 @@ class BookingModel {
      */
     public function getBookingById($booking_id) {
         $stmt = $this->pdo->prepare("
-            SELECT b.*, c.nama_lapangan, c.tipe_lapangan, u.nama_lengkap, u.email, u.nomor_telepon
+            SELECT b.*, c.nama_lapangan, c.tipe_lapangan, u.nama_lengkap, u.email, u.nomor_telepon,
+                   p.nama_lengkap as checkin_by_name, v.nama_lengkap as verified_by_name
             FROM bookings b
             JOIN courts c ON b.court_id = c.id
             JOIN users u ON b.user_id = u.id
+            LEFT JOIN users p ON b.checkin_by = p.id
+            LEFT JOIN users v ON b.verified_by = v.id
             WHERE b.id = :id
         ");
         $stmt->execute([':id' => $booking_id]);
@@ -58,38 +84,39 @@ class BookingModel {
         $status = strtolower($status);
         if ($status === 'confirmed') {
             $booking = $this->getBookingById($booking_id);
-            if ($booking && empty($booking['booking_code'])) {
-                // Generate secure 16-char code
-                $code = 'BK' . strtoupper(substr(bin2hex(random_bytes(8)), 0, 14));
-                while (true) {
-                    $check = $this->pdo->prepare("SELECT id FROM bookings WHERE booking_code = ?");
-                    $check->execute([$code]);
-                    if ($check->rowCount() === 0) break;
+            if ($booking) {
+                $token = $booking['checkin_token'];
+                if (empty($token)) {
+                    $token = bin2hex(random_bytes(32));
+                }
+                $code = $booking['booking_code'];
+                if (empty($code)) {
                     $code = 'BK' . strtoupper(substr(bin2hex(random_bytes(8)), 0, 14));
+                    while (true) {
+                        $check = $this->pdo->prepare("SELECT id FROM bookings WHERE booking_code = ?");
+                        $check->execute([$code]);
+                        if ($check->rowCount() === 0) break;
+                        $code = 'BK' . strtoupper(substr(bin2hex(random_bytes(8)), 0, 14));
+                    }
                 }
 
                 $stmt = $this->pdo->prepare("
                     UPDATE bookings SET
                         status = 'confirmed',
                         booking_code = :code,
+                        checkin_token = IFNULL(checkin_token, :token),
+                        checkin_generated_at = IFNULL(checkin_generated_at, NOW()),
                         payment_status = 'Verified',
-                        verified_at = NOW(),
-                        verified_by = :verifier_id
+                        verified_at = IFNULL(verified_at, NOW()),
+                        verified_by = IFNULL(verified_by, :verifier_id)
                     WHERE id = :id
                 ");
                 return $stmt->execute([
                     ':code' => $code,
+                    ':token' => $token,
                     ':verifier_id' => $verifier_id,
                     ':id' => $booking_id
                 ]);
-            } else {
-                $stmt = $this->pdo->prepare("
-                    UPDATE bookings SET
-                        status = 'confirmed',
-                        payment_status = 'Verified'
-                    WHERE id = :id
-                ");
-                return $stmt->execute([':id' => $booking_id]);
             }
         } elseif ($status === 'cancelled') {
             $stmt = $this->pdo->prepare("
@@ -111,7 +138,29 @@ class BookingModel {
     }
 
     /**
-     * Process digital check-in
+     * Ensure checkin_token is generated for a verified booking
+     * @param int $booking_id
+     * @return string|false
+     */
+    public function ensureCheckinToken($booking_id) {
+        $booking = $this->getBookingById($booking_id);
+        if (!$booking) return false;
+        if (!empty($booking['checkin_token'])) {
+            return $booking['checkin_token'];
+        }
+        if ($booking['payment_status'] === 'Verified') {
+            $token = bin2hex(random_bytes(32));
+            $stmt = $this->pdo->prepare("
+                UPDATE bookings SET checkin_token = :token, checkin_generated_at = NOW() WHERE id = :id AND checkin_token IS NULL
+            ");
+            $stmt->execute([':token' => $token, ':id' => $booking_id]);
+            return $token;
+        }
+        return false;
+    }
+
+    /**
+     * Process digital check-in by booking code
      * @param string $booking_code
      * @param string $ip
      * @param string $browser
@@ -126,13 +175,39 @@ class BookingModel {
                 checkin_ip = :ip,
                 checkin_browser = :browser,
                 checkin_by = :petugas_id
-            WHERE booking_code = :booking_code AND payment_status = 'Verified' AND status = 'confirmed'
+            WHERE booking_code = :booking_code AND payment_status = 'Verified' AND status = 'confirmed' AND checkin_status = 'Not Checked In'
         ");
         return $stmt->execute([
             ':ip' => $ip,
             ':browser' => $browser,
             ':petugas_id' => $petugas_id,
             ':booking_code' => $booking_code
+        ]);
+    }
+
+    /**
+     * Process digital check-in by checkin_token
+     * @param string $token
+     * @param string $ip
+     * @param string $browser
+     * @param int $petugas_id
+     * @return bool
+     */
+    public function checkinByToken($token, $ip, $browser, $petugas_id) {
+        $stmt = $this->pdo->prepare("
+            UPDATE bookings SET
+                checkin_status = 'Checked In',
+                checkin_time = NOW(),
+                checkin_ip = :ip,
+                checkin_browser = :browser,
+                checkin_by = :petugas_id
+            WHERE checkin_token = :token AND payment_status = 'Verified' AND checkin_status = 'Not Checked In'
+        ");
+        return $stmt->execute([
+            ':ip' => $ip,
+            ':browser' => $browser,
+            ':petugas_id' => $petugas_id,
+            ':token' => trim($token)
         ]);
     }
 
@@ -215,5 +290,71 @@ class BookingModel {
             'unchecked_today' => $unchecked,
             'attendance_rate' => $rate
         ];
+    }
+
+    /**
+     * Get or create checkin_token for a booking
+     * @param array|int|string $booking
+     * @return string Token
+     */
+    public function getOrCreateCheckinToken($booking) {
+        return getOrCreateCheckinToken($booking, $this->pdo);
+    }
+}
+
+/**
+ * Global Helper: Get or create checkin_token for a booking
+ * Used by booking-detail.php, invoice.php, download_qr.php, checkin.php, scanner kasir
+ * @param array|int|string $booking Array booking, booking ID, or booking_code
+ * @param PDO|null $pdoInstance
+ * @return string Token
+ */
+if (!function_exists('getOrCreateCheckinToken')) {
+    function getOrCreateCheckinToken($booking, $pdoInstance = null) {
+        if (empty($pdoInstance)) {
+            global $pdo;
+            $pdoInstance = $pdo;
+        }
+
+        if (!$pdoInstance) {
+            return '';
+        }
+
+        if (is_numeric($booking) || is_string($booking)) {
+            if (is_numeric($booking)) {
+                $stmt = $pdoInstance->prepare("SELECT id, checkin_token, payment_status FROM bookings WHERE id = ?");
+                $stmt->execute([(int)$booking]);
+            } else {
+                $stmt = $pdoInstance->prepare("SELECT id, checkin_token, payment_status FROM bookings WHERE booking_code = ? OR checkin_token = ?");
+                $stmt->execute([$booking, $booking]);
+            }
+            $booking = $stmt->fetch();
+        }
+
+        if (!$booking || empty($booking['id'])) {
+            return '';
+        }
+
+        if (!empty($booking['checkin_token'])) {
+            return $booking['checkin_token'];
+        }
+
+        // Generate secure 64-hex token using random_bytes(32)
+        $token = bin2hex(random_bytes(32));
+        $now = date('Y-m-d H:i:s');
+
+        $stmt = $pdoInstance->prepare("
+            UPDATE bookings SET 
+                checkin_token = :token,
+                checkin_generated_at = IFNULL(checkin_generated_at, :now)
+            WHERE id = :id AND (checkin_token IS NULL OR checkin_token = '')
+        ");
+        $stmt->execute([
+            ':token' => $token,
+            ':now'   => $now,
+            ':id'    => $booking['id']
+        ]);
+
+        return $token;
     }
 }

@@ -102,10 +102,12 @@ include __DIR__ . '/includes/header.php';
             Tiket Check-in Digital
         </div>
 
-        <?php if ($isVerified): ?>
+        <?php if ($isVerified): 
+            $token = getOrCreateCheckinToken($booking, $pdo);
+        ?>
             <!-- Active QR -->
             <div class="bd-qr-img-wrap">
-                <img src="<?= QRHelper::generateQRCodeDataUri(QRHelper::generateCheckinUrl($code)) ?>"
+                <img src="<?= QRHelper::generateQRCodeDataUri(QRHelper::generateCheckinUrl($token)) ?>"
                     alt="QR Check-in <?= htmlspecialchars($code) ?>" style="width: 200px; height: 200px; display: block;">
             </div>
 
@@ -151,8 +153,9 @@ include __DIR__ . '/includes/header.php';
             <div class="bd-qr-inactive">
                 <span class="material-symbols-outlined" style="font-size: 3.5rem;">qr_code_2</span>
                 <span style="font-size: 0.85rem; font-weight: 700;">QR Belum Aktif</span>
-                <span style="font-size: 0.75rem; text-align: center; padding: 0 20px;">Selesaikan pembayaran untuk
-                    mengaktifkan tiket</span>
+                <span style="font-size: 0.8rem; text-align: center; padding: 0 20px; color: var(--text-muted); font-weight: 600;">
+                    QR akan tersedia setelah pembayaran diverifikasi.
+                </span>
             </div>
             <?php if ($booking['payment_status'] !== 'Rejected'): ?>
                 <a href="rincian_pembayaran.php?booking_id=<?= $booking['id'] ?>" class="btn btn-primary"

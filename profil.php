@@ -294,176 +294,159 @@ include __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
-                <!-- Tombol Edit Profil & Tombol Ganti Password -->
-                <div class="profile-header-actions">
-                    <button type="button" class="btn btn-primary" onclick="openProfileModal('modal-edit-profile')">
-                        <span class="material-symbols-outlined">edit</span>
-                        Edit Profil
-                    </button>
-
-                    <button type="button" class="btn btn-outline" onclick="openProfileModal('modal-change-password')">
-                        <span class="material-symbols-outlined">key</span>
-                        Ganti Password
-                    </button>
-                </div>
-            </div>
-
-            <!-- INFORMASI AKUN (Format Label : Value dengan Aligned Colons dan Thin Dividers) -->
-            <div class="profile-card-body">
-                <div class="profile-section-title">
-                    <span class="material-symbols-outlined">manage_accounts</span>
-                    Informasi Akun
-                </div>
-
-                <div class="profile-info-grid">
-
-                    <!-- 1. Nama -->
-                    <div class="profile-info-row-item">
-                        <div class="profile-info-label">Nama</div>
-                        <div class="profile-info-colon"></div>
-                        <div class="profile-info-value">
-                            <div class="profile-value-text-wrap">
-                                <span
-                                    class="profile-value-text"><?= htmlspecialchars($user['nama_lengkap'] ?? '-') ?></span>
-                            </div>
-                        </div>
+                <!-- INFORMASI AKUN (Format Label : Value dengan Aligned Colons dan Thin Dividers) -->
+                <div class="profile-card-body">
+                    <div class="profile-section-title">
+                        <span class="material-symbols-outlined">manage_accounts</span>
+                        Informasi Akun
                     </div>
 
-                    <div class="profile-info-divider"></div>
+                    <div class="profile-info-grid">
 
-                    <!-- 2. Username -->
-                    <div class="profile-info-row-item">
-                        <div class="profile-info-label">Username</div>
-                        <div class="profile-info-colon"></div>
-                        <div class="profile-info-value">
-                            <div class="profile-value-text-wrap">
-                                <span class="profile-value-text">
-                                    <?php
-                                    $dispUsername = !empty($user['username']) ? $user['username'] : explode('@', $user['email'])[0];
-                                    echo htmlspecialchars($dispUsername);
-                                    ?>
-                                </span>
+                        <!-- 1. Nama -->
+                        <div class="profile-info-row-item">
+                            <div class="profile-info-label">Nama</div>
+                            <div class="profile-info-colon"></div>
+                            <div class="profile-info-value">
+                                <div class="profile-value-text-wrap">
+                                    <span
+                                        class="profile-value-text"><?= htmlspecialchars($user['nama_lengkap'] ?? '-') ?></span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="profile-info-divider"></div>
+                        <div class="profile-info-divider"></div>
 
-                    <!-- 3. Email -->
-                    <div class="profile-info-row-item">
-                        <div class="profile-info-label">Email</div>
-                        <div class="profile-info-colon"></div>
-                        <div class="profile-info-value">
-                            <div class="profile-value-text-wrap">
-                                <span class="profile-value-text"><?= htmlspecialchars($user['email'] ?? '-') ?></span>
-                            </div>
-                            <?php if (isset($user['email_verified']) && $user['email_verified']): ?>
-                                <div class="profile-badge-sub-row">
-                                    <span class="badge badge-success"
-                                        style="font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;">
-                                        <span class="material-symbols-outlined" style="font-size: 13px;">verified</span>
-                                        Verified
+                        <!-- 2. Username -->
+                        <div class="profile-info-row-item">
+                            <div class="profile-info-label">Username</div>
+                            <div class="profile-info-colon"></div>
+                            <div class="profile-info-value">
+                                <div class="profile-value-text-wrap">
+                                    <span class="profile-value-text">
+                                        <?php
+                                        $dispUsername = !empty($user['username']) ? $user['username'] : explode('@', $user['email'])[0];
+                                        echo htmlspecialchars($dispUsername);
+                                        ?>
                                     </span>
                                 </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <div class="profile-info-divider"></div>
-
-                    <!-- 4. Nomor HP -->
-                    <div class="profile-info-row-item">
-                        <div class="profile-info-label">Nomor HP</div>
-                        <div class="profile-info-colon"></div>
-                        <div class="profile-info-value">
-                            <div class="profile-value-text-wrap">
-                                <span class="profile-value-text">
-                                    <?php
-                                    $noHp = $user['nomor_telepon'] ?? $user['phone'] ?? '-';
-                                    echo htmlspecialchars(!empty($noHp) ? $noHp : '-');
-                                    ?>
-                                </span>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="profile-info-divider"></div>
+                        <div class="profile-info-divider"></div>
 
-                    <!-- 5. Status -->
-                    <div class="profile-info-row-item">
-                        <div class="profile-info-label">Status</div>
-                        <div class="profile-info-colon"></div>
-                        <div class="profile-info-value">
-                            <div class="profile-value-text-wrap">
-                                <span class="profile-value-text"
-                                    style="color: #22c55e; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+                        <!-- 3. Email -->
+                        <div class="profile-info-row-item">
+                            <div class="profile-info-label">Email</div>
+                            <div class="profile-info-colon"></div>
+                            <div class="profile-info-value">
+                                <div class="profile-value-text-wrap">
                                     <span
-                                        style="width: 8px; height: 8px; border-radius: 50%; background-color: #22c55e; display: inline-block;"></span>
-                                    Aktif
-                                </span>
+                                        class="profile-value-text"><?= htmlspecialchars($user['email'] ?? '-') ?></span>
+                                </div>
+                                <?php if (isset($user['email_verified']) && $user['email_verified']): ?>
+                                    <div class="profile-badge-sub-row">
+                                        <span class="badge badge-success"
+                                            style="font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-symbols-outlined" style="font-size: 13px;">verified</span>
+                                            Verified
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="profile-info-divider"></div>
+                        <div class="profile-info-divider"></div>
 
-                    <!-- 6. Tanggal Gabung -->
-                    <div class="profile-info-row-item">
-                        <div class="profile-info-label">Tanggal Gabung</div>
-                        <div class="profile-info-colon"></div>
-                        <div class="profile-info-value">
-                            <div class="profile-value-text-wrap">
-                                <span
-                                    class="profile-value-text"><?= formatTanggalIndonesia($user['created_at'] ?? date('Y-m-d')) ?></span>
+                        <!-- 4. Nomor HP -->
+                        <div class="profile-info-row-item">
+                            <div class="profile-info-label">Nomor HP</div>
+                            <div class="profile-info-colon"></div>
+                            <div class="profile-info-value">
+                                <div class="profile-value-text-wrap">
+                                    <span class="profile-value-text">
+                                        <?php
+                                        $noHp = $user['nomor_telepon'] ?? $user['phone'] ?? '-';
+                                        echo htmlspecialchars(!empty($noHp) ? $noHp : '-');
+                                        ?>
+                                    </span>
+                                </div>
                             </div>
                         </div>
+
+                        <div class="profile-info-divider"></div>
+
+                        <!-- 5. Status -->
+                        <div class="profile-info-row-item">
+                            <div class="profile-info-label">Status</div>
+                            <div class="profile-info-colon"></div>
+                            <div class="profile-info-value">
+                                <div class="profile-value-text-wrap">
+                                    <span class="profile-value-text"
+                                        style="color: #22c55e; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+                                        <span
+                                            style="width: 8px; height: 8px; border-radius: 50%; background-color: #22c55e; display: inline-block;"></span>
+                                        Aktif
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-info-divider"></div>
+
+                        <!-- 6. Tanggal Gabung -->
+                        <div class="profile-info-row-item">
+                            <div class="profile-info-label">Tanggal Gabung</div>
+                            <div class="profile-info-colon"></div>
+                            <div class="profile-info-value">
+                                <div class="profile-value-text-wrap">
+                                    <span
+                                        class="profile-value-text"><?= formatTanggalIndonesia($user['created_at'] ?? date('Y-m-d')) ?></span>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
+                </div>
 
+                <!-- PUSAT PENGATURAN AKUN -->
+                <div class="profile-card-body"
+                    style="border-top: 1px solid var(--border); background: var(--surface-alt); padding: 24px 32px; border-bottom-left-radius: var(--radius-lg); border-bottom-right-radius: var(--radius-lg);">
+                    <div class="profile-section-title" style="margin-bottom: 16px;">
+                        <span class="material-symbols-outlined">settings_suggest</span>
+                        Pusat Pengaturan Akun
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                        <button type="button" class="btn btn-outline"
+                            onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+                            style="justify-content: flex-start; gap: 10px; padding: 12px 16px; font-size: 0.88rem; background: var(--card-bg);">
+                            <span class="material-symbols-outlined" style="color: var(--blue);">person</span>
+                            Informasi Akun
+                        </button>
+                        <button type="button" class="btn btn-outline" onclick="openProfileModal('modal-edit-profile')"
+                            style="justify-content: flex-start; gap: 10px; padding: 12px 16px; font-size: 0.88rem; background: var(--card-bg);">
+                            <span class="material-symbols-outlined" style="color: var(--blue);">edit</span>
+                            Edit Profil
+                        </button>
+                        <button type="button" class="btn btn-outline"
+                            onclick="openProfileModal('modal-change-password')"
+                            style="justify-content: flex-start; gap: 10px; padding: 12px 16px; font-size: 0.88rem; background: var(--card-bg);">
+                            <span class="material-symbols-outlined" style="color: #F59E0B;">key</span>
+                            Ganti Password
+                        </button>
+                        <?php if (($user['role'] ?? $_SESSION['role'] ?? 'customer') === 'customer'): ?>
+                            <a href="dashboarduser.php?scroll=riwayat" class="btn btn-outline"
+                                style="justify-content: flex-start; gap: 10px; padding: 12px 16px; font-size: 0.88rem; text-decoration: none; color: inherit; background: var(--card-bg);">
+                                <span class="material-symbols-outlined" style="color: var(--green);">history</span>
+                                Riwayat Booking
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
-            </div>
 
-            <!-- PUSAT PENGATURAN AKUN -->
-            <div class="profile-card-body"
-                style="border-top: 1px solid var(--border); background: var(--surface-alt); padding: 24px 32px; border-bottom-left-radius: var(--radius-lg); border-bottom-right-radius: var(--radius-lg);">
-                <div class="profile-section-title" style="margin-bottom: 16px;">
-                    <span class="material-symbols-outlined">settings_suggest</span>
-                    Pusat Pengaturan Akun
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-                    <button type="button" class="btn btn-outline"
-                        onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
-                        style="justify-content: flex-start; gap: 10px; padding: 12px 16px; font-size: 0.88rem; background: var(--card-bg);">
-                        <span class="material-symbols-outlined" style="color: var(--blue);">person</span>
-                        Informasi Akun
-                    </button>
-                    <button type="button" class="btn btn-outline" onclick="openProfileModal('modal-edit-profile')"
-                        style="justify-content: flex-start; gap: 10px; padding: 12px 16px; font-size: 0.88rem; background: var(--card-bg);">
-                        <span class="material-symbols-outlined" style="color: var(--blue);">edit</span>
-                        Edit Profil
-                    </button>
-                    <button type="button" class="btn btn-outline" onclick="openProfileModal('modal-change-password')"
-                        style="justify-content: flex-start; gap: 10px; padding: 12px 16px; font-size: 0.88rem; background: var(--card-bg);">
-                        <span class="material-symbols-outlined" style="color: #F59E0B;">key</span>
-                        Ganti Password
-                    </button>
-                    <?php if (($user['role'] ?? $_SESSION['role'] ?? 'customer') === 'customer'): ?>
-                        <a href="dashboarduser.php?scroll=riwayat" class="btn btn-outline"
-                            style="justify-content: flex-start; gap: 10px; padding: 12px 16px; font-size: 0.88rem; text-decoration: none; color: inherit; background: var(--card-bg);">
-                            <span class="material-symbols-outlined" style="color: var(--green);">history</span>
-                            Riwayat Booking
-                        </a>
-                    <?php endif; ?>
-                    <a href="logout.php" class="btn btn-outline"
-                        style="justify-content: flex-start; gap: 10px; padding: 12px 16px; font-size: 0.88rem; text-decoration: none; color: #EF4444; border-color: rgba(239,68,68,0.3); background: var(--card-bg);">
-                        <span class="material-symbols-outlined">logout</span>
-                        Logout / Keluar
-                    </a>
-                </div>
             </div>
 
         </div>
-
-    </div>
 </section>
 
 <!-- MODAL 1: EDIT PROFIL -->

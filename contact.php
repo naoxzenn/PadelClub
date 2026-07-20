@@ -55,7 +55,7 @@ $baseUrl = '';
                     </div>
                     <div>
                         <strong>Nomor Telepon</strong>
-                        <span>+62 812-3456-7890<br>+62 21-8888-9999</span>
+                        <span>+62 822 3300 9810</span>
                     </div>
                 </div>
 
@@ -65,7 +65,7 @@ $baseUrl = '';
                     </div>
                     <div>
                         <strong>Email</strong>
-                        <span>info@padelclub.id<br>booking@padelclub.id</span>
+                        <span>padelclub4@gmail.com</span>
                     </div>
                 </div>
 

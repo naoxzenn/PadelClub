@@ -44,11 +44,12 @@ $totalLapangan = count($courts);
 
 // Gambar lapangan — di-mapping berdasarkan tipe karena tabel courts belum punya kolom foto.
 $imgIndoor = [
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuBSCIY9tXWWAR8oLSUXjTH37NBn19MYl9OWTUEKpJpciJr2os-hLQH2ZGzBOlirBjamAxtixIiWi6xQpu6NqaKY1R9mksH43K2ajM0RC2Li20JUO1xis1Wt-WR7nhYokvGBqxnlA-pO0BUS_oJyKizd9rPv7ymtSSPgRtg3c6bQJJWQHpnsGE4mDZ4fshuQz7XdudTmEqgpnaibNdv5tza2DYqq6x32t_wUNy9327DEYhCkE2AxBghtSe1PeEosSoV5BCV_h-yr73j8',
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuDYFjPFZbQMNYkj2UO_WyllqDjPTkVQN2xMGy851LX2Qf-n7LA22hFNQ4fPtnTCUZdgURKgfBGyTEaqDYxkKpMKUPunDjY85LBrq2kPv_RE72ZvaElkG_vnQG5a7DiREN1WfV1KlAG12kZHDakqt76xCXr-SIljf08Q5TXuyHmkukflcXdOrOwqpVqtRgYc3o1taexAdkCcU7lglsKmqqBHpQ84w0gKtfuILqQ8_ZqdkWhqJIvuV6CxneGAgTtxO6n48pCsSO0LbalF',
+    'assets/images/courts/court-01-indoor.webp',
+    'assets/images/courts/court-02-indoor.webp',
 ];
 $imgOutdoor = [
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuAKrxj2uE1yr6ds8wxxv_aBb_8Gs1yCzaXd-wxLuYqR__4yXjAN3hJSTTvVzhEfjIVW07XJA8rzsDAwhzB9fTXjKgLw1H3xZe0SAO6EfYdFE3aN21SPyMrzCsMrCXhKeEXXLcUQUZ6NkQJ9kZKgziCCjPWJoacmFcWr5lDjwV6Ob1CO9qUhofZ5qUdIJNEGEJO4PhWeQnVOCvP88h-lBNXFGbOzGAbAqeszi3ejWH_0KDwxZQitWfLKfqdq37Fp46j1ZejJSlLdKq-m',
+    'assets/images/courts/court-03-outdoor.webp',
+    'assets/images/courts/court-04-outdoor.webp',
 ];
 $imgIdxIndoor = 0;
 $imgIdxOutdoor = 0;
@@ -57,8 +58,7 @@ $imgIdxOutdoor = 0;
 
 <!-- Hero section -->
 <header class="hero">
-    <div class="hero-bg"
-        style="background-image:url('https://lh3.googleusercontent.com/aida-public/AB6AXuCrPOZIYAwRmKTaO0PSdNGCgidt7tqaR3zcSJhxGcllwwH4aLWnUw20kT7jEUsXTILfNe5l-W_UvbpMyuDHy-VtAzHvWFaA-CoJcflE-nil8LXuPbpcdd7bErE5LkFo6MrZGRL0A7lKCjQVIBw8dqPrqPgeDKAiCwWWYiHLETJkpub6ux8sBVCDjlf5e0ajldRmEnF9skVttMksDpHDN4EMahLBAT2VAHAphfPQl7XrwzWs2WawitPFletSA6xfUKvpQFqqSf6LMhro');">
+    <div class="hero-bg" style="background-image:url('assets/images/hero/hero-padel-action-01.webp');">
     </div>
     <div class="container hero-content">
         <h1>Main Padel Lebih Seru Bersama Komunitas Terbaik</h1>

@@ -11,57 +11,58 @@ class CheckinController {
         $this->bookingModel = new BookingModel($pdo);
     }
 
-    public function handleCheckin($code) {
+    public function handleCheckin($tokenKey) {
         $error_msg = '';
         $success_msg = '';
         $booking = null;
+        $already_checked_in = false;
 
-        $code = trim($code);
-        if (empty($code)) {
-            $error_msg = 'Booking Code tidak boleh kosong.';
+        $tokenKey = trim($tokenKey);
+        if (empty($tokenKey)) {
+            $error_msg = 'QR tidak valid.';
         } else {
-            $booking = $this->bookingModel->getBookingByCode($code);
+            // First lookup by checkin_token, fallback to booking_code
+            $booking = $this->bookingModel->getBookingByCheckinToken($tokenKey);
             if (!$booking) {
-                $error_msg = 'Booking tidak ditemukan.';
+                $booking = $this->bookingModel->getBookingByCode($tokenKey);
+            }
+
+            if (!$booking) {
+                $error_msg = 'QR tidak valid.';
             } else {
                 // 1. Status Check: Booking cannot be cancelled
                 if ($booking['status'] === 'cancelled') {
-                    $error_msg = 'Booking Tidak Berlaku (Telah Dibatalkan).';
+                    $error_msg = 'QR tidak valid. Booking telah dibatalkan.';
                 }
-                // 2. Verification Check: Payment must be verified
+                // 2. Verification Check: Payment status must be Verified
                 elseif ($booking['payment_status'] !== 'Verified') {
-                    $error_msg = 'QR Tidak Valid. Pembayaran belum diverifikasi.';
+                    $error_msg = 'QR belum aktif.';
                 }
-                // 3. Time Validation: Booking must be for today
-                else {
-                    $today = date('Y-m-d');
-                    $bookingDate = $booking['tanggal_booking'];
-                    
-                    if ($bookingDate > $today) {
-                        $error_msg = 'Belum Berlaku. Booking ini dijadwalkan untuk tanggal ' . date('d F Y', strtotime($bookingDate)) . '.';
-                    } elseif ($bookingDate < $today) {
-                        $error_msg = 'Sudah Kadaluarsa. Booking ini dijadwalkan untuk tanggal ' . date('d F Y', strtotime($bookingDate)) . '.';
-                    }
-                    // 4. One-Time Check: Cannot check-in twice
-                    elseif ($booking['checkin_status'] === 'Checked In') {
-                        $error_msg = 'Sudah Pernah Digunakan. Check-in dilakukan sebelumnya pada ' . date('d/m/Y H:i:s', strtotime($booking['checkin_time'])) . '.';
-                    }
+                // 3. One-Time Check: Already checked in
+                elseif ($booking['checkin_status'] === 'Checked In') {
+                    $already_checked_in = true;
+                    $error_msg = 'QR sudah digunakan.';
                 }
             }
         }
 
         // Handle POST form submission to perform check-in
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'confirm_checkin') {
-            if (!$error_msg && $booking) {
+            if (!$error_msg && $booking && $booking['checkin_status'] !== 'Checked In') {
                 $ip = $_SERVER['REMOTE_ADDR'] ?? '';
                 $browser = $_SERVER['HTTP_USER_AGENT'] ?? '';
                 $petugas_id = $_SESSION['user_id'];
                 
-                $success = $this->bookingModel->checkin($code, $ip, $browser, $petugas_id);
+                $checkinToken = !empty($booking['checkin_token']) ? $booking['checkin_token'] : $tokenKey;
+                $success = $this->bookingModel->checkinByToken($checkinToken, $ip, $browser, $petugas_id);
+                if (!$success) {
+                    $success = $this->bookingModel->checkin($booking['booking_code'], $ip, $browser, $petugas_id);
+                }
+
                 if ($success) {
                     $success_msg = 'Check-in berhasil dikonfirmasi!';
                     // Refresh booking data
-                    $booking = $this->bookingModel->getBookingByCode($code);
+                    $booking = $this->bookingModel->getBookingById($booking['id']);
                 } else {
                     $error_msg = 'Gagal memproses check-in. Silakan coba lagi.';
                 }

@@ -32,6 +32,7 @@ if (isset($_SESSION['user_id'])) {
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap">
     <link rel="stylesheet" href="<?= $baseUrl ?? '' ?>assets/style.css">
     <link rel="stylesheet" href="<?= $baseUrl ?? '' ?>assets/css/theme.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         (function() {
             const theme = localStorage.getItem('padelclub_theme');
@@ -184,7 +185,7 @@ if (isset($_SESSION['user_id'])) {
                         <span class="material-symbols-outlined theme-icon">dark_mode</span>
                         <span class="theme-label">Mode Gelap</span>
                     </button>
-                    <a href="<?= $baseUrl ?? '' ?>logout.php" class="logout-btn">
+                    <a href="#" onclick="confirmLogout('<?= $baseUrl ?? '' ?>logout.php'); return false;" class="logout-btn">
                         <span class="material-symbols-outlined">logout</span> Keluar
                     </a>
                 </nav>
@@ -320,7 +321,7 @@ if (isset($_SESSION['user_id'])) {
                                     <a href="<?= $baseUrl ?? '' ?>dashboarduser.php" class="btn-pill <?= $currentPage === 'dashboarduser.php' ? 'active' : '' ?>">Dashboard</a>
                                     <a href="<?= $baseUrl ?? '' ?>profil.php" class="btn-pill <?= $currentPage === 'profil.php' ? 'active' : '' ?>">Profil</a>
                                 <?php endif; ?>
-                                <a href="<?= $baseUrl ?? '' ?>logout.php" class="btn-pill btn-logout-danger">Keluar</a>
+                                <a href="#" onclick="confirmLogout('<?= $baseUrl ?? '' ?>logout.php'); return false;" class="btn-pill btn-logout-danger">Keluar</a>
                             <?php else: ?>
                                 <a href="<?= $baseUrl ?? '' ?>login.php" class="btn-pill">Masuk</a>
                                 <a href="<?= $baseUrl ?? '' ?>register.php" class="btn-pill primary">Daftar</a>
@@ -371,7 +372,7 @@ if (isset($_SESSION['user_id'])) {
                             <?php endif; ?>
                             <div class="mobile-nav-divider"></div>
                             <div class="mobile-nav-actions">
-                                <a href="<?= $baseUrl ?? '' ?>logout.php" class="btn btn-logout-danger" style="width:100%;">Keluar</a>
+                                <a href="#" onclick="confirmLogout('<?= $baseUrl ?? '' ?>logout.php'); return false;" class="btn btn-logout-danger" style="width:100%;">Keluar</a>
                             </div>
                         <?php else: ?>
                             <div class="mobile-nav-divider"></div>
@@ -384,6 +385,32 @@ if (isset($_SESSION['user_id'])) {
                 <?php endif; ?>
 
                 <script>
+                    // ── Global Logout Confirmation Dialog ─────────────────────────────
+                    function confirmLogout(logoutUrl) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'Konfirmasi Logout',
+                                text: 'Apakah Anda yakin ingin logout?',
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#EF4444',
+                                cancelButtonColor: '#64748B',
+                                confirmButtonText: 'Logout',
+                                cancelButtonText: 'Batal',
+                                reverseButtons: true,
+                                focusCancel: true
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = logoutUrl;
+                                }
+                            });
+                        } else {
+                            if (confirm('Konfirmasi Logout\n\nApakah Anda yakin ingin logout?')) {
+                                window.location.href = logoutUrl;
+                            }
+                        }
+                    }
+
                     (function () {
                         const btn = document.getElementById('nav-hamburger');
                         const drawer = document.getElementById('mobile-nav');

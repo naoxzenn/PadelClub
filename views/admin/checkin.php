@@ -93,8 +93,16 @@ include_once __DIR__ . '/../../includes/header.php';
 
                     <?php if ($booking['checkin_status'] === 'Checked In'): ?>
                         <div style="display: grid; grid-template-columns: 1fr 1.5fr; border-bottom: 1px solid rgba(0,0,0,0.03); padding-bottom: 8px; background: rgba(34, 197, 94, 0.05); padding: 8px; border-radius: 6px;">
-                            <span style="color: var(--text-muted); font-weight: 500;">Waktu Check-in</span>
-                            <strong style="color: var(--navy);"><?= date('d/m/Y H:i:s', strtotime($booking['checkin_time'])) ?></strong>
+                            <span style="color: var(--text-muted); font-weight: 500;">Tanggal Check-in</span>
+                            <strong style="color: var(--navy);"><?= date('d F Y', strtotime($booking['checkin_time'])) ?></strong>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1.5fr; border-bottom: 1px solid rgba(0,0,0,0.03); padding-bottom: 8px; background: rgba(34, 197, 94, 0.05); padding: 8px; border-radius: 6px;">
+                            <span style="color: var(--text-muted); font-weight: 500;">Jam Check-in</span>
+                            <strong style="color: var(--navy);"><?= date('H:i:s', strtotime($booking['checkin_time'])) ?> WIB</strong>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1.5fr; border-bottom: 1px solid rgba(0,0,0,0.03); padding-bottom: 8px; background: rgba(34, 197, 94, 0.05); padding: 8px; border-radius: 6px;">
+                            <span style="color: var(--text-muted); font-weight: 500;">Kasir Petugas</span>
+                            <strong style="color: var(--navy);"><?= htmlspecialchars($booking['checkin_by_name'] ?? 'Petugas Kasir') ?></strong>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -107,7 +115,7 @@ include_once __DIR__ . '/../../includes/header.php';
                         </div>
                         <form method="POST" action="">
                             <input type="hidden" name="action" value="confirm_checkin">
-                            <button type="submit" class="btn btn-primary btn-block" style="padding: 14px; font-weight:700; font-size: 1.1rem; border-radius: var(--radius-md);">Konfirmasi Masuk (Check In)</button>
+                            <button type="submit" class="btn btn-primary btn-block" style="padding: 14px; font-weight:700; font-size: 1.1rem; border-radius: var(--radius-md);">Konfirmasi Check-in</button>
                         </form>
                     </div>
                 <?php endif; ?>

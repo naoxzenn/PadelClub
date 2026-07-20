@@ -16,57 +16,59 @@ require_once __DIR__ . '/../models/BookingModel.php';
 
 $model  = new BookingModel($pdo);
 $action = $_REQUEST['action'] ?? '';
-$code   = trim($_REQUEST['code'] ?? '');
+$token  = trim($_REQUEST['token'] ?? $_REQUEST['code'] ?? '');
 
-if (empty($code)) {
-    echo json_encode(['error' => 'Kode booking tidak boleh kosong.']);
+if (empty($token)) {
+    echo json_encode(['error' => 'QR / Token check-in tidak boleh kosong.']);
     exit;
 }
 
 // ============================================================
-// ACTION: lookup — fetch booking info and validate eligibility
+// ACTION: lookup — fetch booking info by checkin_token & validate
 // ============================================================
 if ($action === 'lookup') {
-    $booking = $model->getBookingByCode($code);
+    $booking = $model->getBookingByCheckinToken($token);
+    if (!$booking) {
+        $booking = $model->getBookingByCode($token);
+    }
 
     if (!$booking) {
-        echo json_encode(['error' => 'Booking tidak ditemukan. Pastikan kode sudah benar.']);
+        echo json_encode(['error' => 'QR tidak valid. Booking tidak ditemukan.']);
         exit;
     }
 
     $reason     = '';
     $canCheckin = false;
+    $isCheckedIn = ($booking['checkin_status'] === 'Checked In');
 
     if ($booking['status'] === 'cancelled') {
-        $reason = 'Booking telah dibatalkan.';
+        $reason = 'QR tidak valid. Booking telah dibatalkan.';
     } elseif ($booking['payment_status'] !== 'Verified') {
-        $reason = 'Pembayaran belum terverifikasi. QR tidak aktif.';
+        $reason = 'QR belum aktif. Pembayaran belum diverifikasi.';
+    } elseif ($isCheckedIn) {
+        $reason = 'QR sudah digunakan.';
+        $canCheckin = false;
     } else {
-        $today       = date('Y-m-d');
-        $bookingDate = $booking['tanggal_booking'];
-
-        if ($bookingDate > $today) {
-            $reason = 'Booking belum berlaku. Dijadwalkan ' . date('d F Y', strtotime($bookingDate)) . '.';
-        } elseif ($bookingDate < $today) {
-            $reason = 'Booking sudah kadaluarsa (tanggal ' . date('d F Y', strtotime($bookingDate)) . ').';
-        } elseif ($booking['checkin_status'] === 'Checked In') {
-            // Already checked in — show info, don't block
-            $canCheckin = false;
-        } else {
-            $canCheckin = true;
-        }
+        $canCheckin = true;
     }
 
-    $checkinTimeFmt = '';
-    if (!empty($booking['checkin_time'])) {
-        $checkinTimeFmt = date('d/m/Y H:i', strtotime($booking['checkin_time']));
+    $checkinDetails = null;
+    if ($isCheckedIn && !empty($booking['checkin_time'])) {
+        $checkinDetails = [
+            'tanggal' => date('d F Y', strtotime($booking['checkin_time'])),
+            'jam'     => date('H:i:s', strtotime($booking['checkin_time'])) . ' WIB',
+            'kasir'   => $booking['checkin_by_name'] ?? 'Petugas Kasir'
+        ];
     }
 
     echo json_encode([
-        'success'     => true,
-        'can_checkin' => $canCheckin,
-        'reason'      => $reason,
-        'booking'     => [
+        'success'         => true,
+        'can_checkin'     => $canCheckin,
+        'reason'          => $reason,
+        'is_checked_in'   => $isCheckedIn,
+        'checkin_details' => $checkinDetails,
+        'booking'         => [
+            'checkin_token'   => $booking['checkin_token'],
             'booking_code'    => $booking['booking_code'],
             'customer_name'   => $booking['nama_lengkap'],
             'court_name'      => $booking['nama_lapangan'] . ' (' . $booking['tipe_lapangan'] . ')',
@@ -75,20 +77,24 @@ if ($action === 'lookup') {
             'jam_selesai'     => substr($booking['jam_selesai'], 0, 5),
             'payment_status'  => $booking['payment_status'],
             'checkin_status'  => $booking['checkin_status'],
-            'checkin_time_fmt'=> $checkinTimeFmt,
+            'checkin_time_fmt'=> !empty($booking['checkin_time']) ? date('d/m/Y H:i:s', strtotime($booking['checkin_time'])) : '',
+            'checkin_by_name' => $booking['checkin_by_name'] ?? ''
         ]
     ]);
     exit;
 }
 
 // ============================================================
-// ACTION: checkin — perform the actual check-in
+// ACTION: checkin — perform the actual check-in by token
 // ============================================================
 if ($action === 'checkin' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $booking = $model->getBookingByCode($code);
+    $booking = $model->getBookingByCheckinToken($token);
+    if (!$booking) {
+        $booking = $model->getBookingByCode($token);
+    }
 
     if (!$booking) {
-        echo json_encode(['success' => false, 'error' => 'Booking tidak ditemukan.']);
+        echo json_encode(['success' => false, 'error' => 'QR tidak valid. Booking tidak ditemukan.']);
         exit;
     }
     if ($booking['status'] === 'cancelled') {
@@ -96,11 +102,16 @@ if ($action === 'checkin' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     if ($booking['payment_status'] !== 'Verified') {
-        echo json_encode(['success' => false, 'error' => 'Pembayaran belum diverifikasi.']);
+        echo json_encode(['success' => false, 'error' => 'QR belum aktif. Pembayaran belum diverifikasi.']);
         exit;
     }
     if ($booking['checkin_status'] === 'Checked In') {
-        echo json_encode(['success' => false, 'error' => 'Pelanggan sudah check-in sebelumnya.']);
+        $checkinTime = !empty($booking['checkin_time']) ? date('d F Y H:i:s', strtotime($booking['checkin_time'])) : '-';
+        $kasirName = $booking['checkin_by_name'] ?? 'Petugas Kasir';
+        echo json_encode([
+            'success' => false,
+            'error'   => "QR sudah digunakan pada $checkinTime WIB oleh $kasirName."
+        ]);
         exit;
     }
 
@@ -108,18 +119,23 @@ if ($action === 'checkin' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $browser    = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255);
     $petugasId  = (int)$_SESSION['user_id'];
 
-    $success = $model->checkin($code, $ip, $browser, $petugasId);
+    $tokenKey = !empty($booking['checkin_token']) ? $booking['checkin_token'] : $token;
+    $success = $model->checkinByToken($tokenKey, $ip, $browser, $petugasId);
+    if (!$success && !empty($booking['booking_code'])) {
+        $success = $model->checkin($booking['booking_code'], $ip, $browser, $petugasId);
+    }
 
     if ($success) {
         // Refresh booking data for response
-        $updated = $model->getBookingByCode($code);
+        $updated = $model->getBookingById($booking['id']);
         echo json_encode([
             'success' => true,
             'booking' => [
                 'booking_code'  => $updated['booking_code'],
                 'customer_name' => $updated['nama_lengkap'],
                 'court_name'    => $updated['nama_lapangan'],
-                'checkin_time'  => date('H:i', strtotime($updated['checkin_time'])),
+                'checkin_time'  => date('d F Y H:i:s', strtotime($updated['checkin_time'])),
+                'kasir_name'    => $updated['checkin_by_name'] ?? 'Kasir'
             ]
         ]);
     } else {
@@ -130,3 +146,4 @@ if ($action === 'checkin' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Fallback
 echo json_encode(['error' => 'Aksi tidak dikenal.']);
+

@@ -132,18 +132,18 @@ function startScanner() {
         config,
         (decodedText) => {
             // QR decoded!
-            let code = decodedText;
-            // If the QR contains the full URL, extract the code param
+            let token = decodedText;
+            // Extract token param 't' or 'code' from scanned URL
             try {
                 const url = new URL(decodedText);
-                const cParam = url.searchParams.get('code');
-                if (cParam) code = cParam;
+                const tParam = url.searchParams.get('t') || url.searchParams.get('code');
+                if (tParam) token = tParam;
             } catch (_) { /* not a URL, use as-is */ }
 
             if (scannerRunning) {
                 html5QrCode.pause(); // Pause to prevent re-trigger
-                setScannerMsg('QR terdeteksi: ' + code, 'found');
-                fetchBooking(code, true);
+                setScannerMsg('QR terdeteksi!', 'found');
+                fetchBooking(token, true);
             }
         },
         (errorMessage) => {
@@ -178,27 +178,29 @@ window.addEventListener('load', () => {
 // ---- Manual Input ----
 document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('manual-code-input');
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') searchByCode();
-    });
+    if (input) {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') searchByCode();
+        });
+    }
 });
 
 function searchByCode() {
-    const code = document.getElementById('manual-code-input').value.trim();
-    if (!code) {
-        alert('Masukkan kode booking terlebih dahulu.');
+    const token = document.getElementById('manual-code-input').value.trim();
+    if (!token) {
+        alert('Masukkan token atau kode booking terlebih dahulu.');
         return;
     }
-    fetchBooking(code, false);
+    fetchBooking(token, false);
 }
 
 // ---- Fetch Booking Info ----
-function fetchBooking(code, fromScanner) {
+function fetchBooking(token, fromScanner) {
     showLoading();
-    fetch(PROCESS_URL + '?action=lookup&code=' + encodeURIComponent(code))
+    fetch(PROCESS_URL + '?action=lookup&token=' + encodeURIComponent(token))
         .then(r => r.json())
         .then(data => {
-            renderResult(data, code, fromScanner);
+            renderResult(data, token, fromScanner);
         })
         .catch(() => {
             renderError('Gagal terhubung ke server. Coba lagi.');
@@ -214,7 +216,7 @@ function showLoading() {
     el.innerHTML = `
         <div class="loading-card">
             <span class="material-symbols-outlined" style="font-size:2rem; color:var(--blue); animation:spin 1s linear infinite; display:block; margin-bottom:8px;">progress_activity</span>
-            <span style="color:var(--text-muted); font-weight:600; font-size:0.9rem;">Mencari booking...</span>
+            <span style="color:var(--text-muted); font-weight:600; font-size:0.9rem;">Mencari data QR booking...</span>
         </div>`;
 }
 
@@ -227,7 +229,7 @@ function renderError(msg) {
     </div>`;
 }
 
-function renderResult(data, code, fromScanner) {
+function renderResult(data, token, fromScanner) {
     const el = document.getElementById('booking-result');
     el.style.display = 'block';
 
@@ -243,7 +245,7 @@ function renderResult(data, code, fromScanner) {
     }
 
     const b = data.booking;
-    const isCheckedIn = b.checkin_status === 'Checked In';
+    const isCheckedIn = (b.checkin_status === 'Checked In' || data.is_checked_in);
     const canCheckin  = data.can_checkin;
 
     let badgeHtml = '';
@@ -257,9 +259,17 @@ function renderResult(data, code, fromScanner) {
 
     let actionHtml = '';
     if (isCheckedIn) {
-        actionHtml = `<div class="result-success">
-            <span class="material-symbols-outlined">check_circle</span>
-            Pelanggan sudah check-in pada ${escapeHtml(b.checkin_time_fmt || '-')} WIB
+        const details = data.checkin_details || {};
+        actionHtml = `<div class="result-error" style="background:#FFF5F5; border-color:#FEB2B2; color:#C53030; flex-direction:column; align-items:flex-start;">
+            <div style="display:flex; align-items:center; gap:8px; font-weight:800; font-size:1rem; color:#9B2C2C;">
+                <span class="material-symbols-outlined">cancel</span>
+                QR Sudah Digunakan.
+            </div>
+            <div style="font-size:0.85rem; margin-top:6px; line-height:1.4;">
+                <div><strong>Tanggal Check-in:</strong> ${escapeHtml(details.tanggal || '-')}</div>
+                <div><strong>Jam Check-in:</strong> ${escapeHtml(details.jam || '-')}</div>
+                <div><strong>Kasir / Petugas:</strong> ${escapeHtml(details.kasir || (b.checkin_by_name || 'Petugas'))}</div>
+            </div>
         </div>`;
     } else if (!canCheckin) {
         actionHtml = `<div class="result-error">
@@ -270,7 +280,8 @@ function renderResult(data, code, fromScanner) {
             setTimeout(() => html5QrCode.resume(), 4000);
         }
     } else {
-        actionHtml = `<button class="btn-confirm-checkin" id="btn-do-checkin" onclick="doCheckin('${escapeHtml(b.booking_code)}')">
+        const activeToken = b.checkin_token || token;
+        actionHtml = `<button class="btn-confirm-checkin" id="btn-do-checkin" onclick="doCheckin('${escapeHtml(activeToken)}')">
             <span class="material-symbols-outlined">how_to_reg</span>
             Konfirmasi Check-in
         </button>`;
@@ -301,7 +312,13 @@ function renderResult(data, code, fromScanner) {
                 <div class="result-row">
                     <span class="result-label">Status Bayar</span>
                     <span class="result-value" style="color:${b.payment_status === 'Verified' ? 'var(--green)' : '#F59E0B'}">
-                        ${b.payment_status === 'Verified' ? 'Lunas ✓' : b.payment_status}
+                        ${b.payment_status === 'Verified' ? 'Verified ✓' : b.payment_status}
+                    </span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Status Check-in</span>
+                    <span class="result-value" style="color:${isCheckedIn ? 'var(--green)' : '#F59E0B'}">
+                        ${isCheckedIn ? 'Checked In' : 'Not Checked In'}
                     </span>
                 </div>
             </div>
@@ -310,7 +327,7 @@ function renderResult(data, code, fromScanner) {
 }
 
 // ---- Perform Check-in ----
-function doCheckin(code) {
+function doCheckin(token) {
     const btn = document.getElementById('btn-do-checkin');
     if (btn) {
         btn.disabled = true;
@@ -320,7 +337,7 @@ function doCheckin(code) {
     fetch(PROCESS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'action=checkin&code=' + encodeURIComponent(code)
+        body: 'action=checkin&token=' + encodeURIComponent(token)
     })
     .then(r => r.json())
     .then(data => {
@@ -333,8 +350,6 @@ function doCheckin(code) {
                     setScannerMsg('Scanner aktif. Arahkan QR ke kamera.', 'scanning');
                 }, 5000);
             }
-            // Refresh stats
-            location.reload();
         } else {
             renderError(data.error || 'Gagal melakukan check-in.');
         }
@@ -353,7 +368,7 @@ function renderCheckinSuccess(b) {
                     <strong>${escapeHtml((b && b.customer_name) || '')}</strong> — ${escapeHtml((b && b.court_name) || '')}
                 </div>
                 <div style="font-size:0.82rem; margin-top:4px; color:var(--green-dark); font-weight:600;">
-                    Tercatat masuk pada ${new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} WIB
+                    Tercatat masuk pada ${escapeHtml((b && b.checkin_time) || '')} WIB oleh ${escapeHtml((b && b.kasir_name) || 'Kasir')}
                 </div>
             </div>
         </div>`;

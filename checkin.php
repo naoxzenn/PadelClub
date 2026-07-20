@@ -15,8 +15,8 @@ require_once __DIR__ . '/config/koneksi.php';
 require_once __DIR__ . '/models/BookingModel.php';
 require_once __DIR__ . '/controllers/CheckinController.php';
 
-$code = $_GET['code'] ?? '';
+$token = $_GET['t'] ?? $_GET['code'] ?? '';
 
 // Instantiating controller with the PDO instance from koneksi.php
 $controller = new CheckinController($pdo);
-$controller->handleCheckin($code);
+$controller->handleCheckin($token);

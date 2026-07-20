@@ -1396,15 +1396,24 @@ tbody tr:hover {
 
 .sidebar-nav a.logout-btn {
     margin-top: auto;
-    color: #EF4444;
+    color: #EF4444 !important;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     padding-top: 20px;
     border-radius: 0;
 }
 
+.sidebar-nav a.logout-btn span {
+    color: #EF4444 !important;
+    transition: color 0.2s ease;
+}
+
 .sidebar-nav a.logout-btn:hover {
-    background: rgba(239, 68, 68, 0.08);
-    color: #F87171;
+    background: rgba(239, 68, 68, 0.12) !important;
+    color: #DC2626 !important;
+}
+
+.sidebar-nav a.logout-btn:hover span {
+    color: #DC2626 !important;
 }
 
 .dashboard-main {
@@ -1840,7 +1849,9 @@ tbody tr:hover {
     inset: 0;
     z-index: 0;
     background-size: cover;
-    background-position: center;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: scroll;
     transform: scale(1.04);
 }
 
@@ -1848,7 +1859,7 @@ tbody tr:hover {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(15, 23, 42, .55) 0%, rgba(15, 23, 42, .65) 100%);
+    background: linear-gradient(180deg, rgba(15, 23, 42, .6) 0%, rgba(15, 23, 42, .75) 100%);
 }
 
 .hero-content {

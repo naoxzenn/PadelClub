@@ -163,15 +163,6 @@ $qrisPayments = mysqli_fetch_all(mysqli_query($conn, "
             </div>
         </div>
 
-        <!-- TABS KASIR -->
-        <div class="tabs" id="kasir-tabs" style="margin-bottom: 24px;">
-            <button class="tab-btn active" onclick="showTab('tab-overview', this)">Dashboard</button>
-            <button class="tab-btn" onclick="showTab('tab-booking-confirm', this)">Booking</button>
-            <button class="tab-btn" onclick="showTab('tab-payment', this)">Pembayaran</button>
-            <button class="tab-btn" onclick="showTab('tab-receipt', this)">Cetak Struk</button>
-            <button class="tab-btn" onclick="showTab('tab-profil', this)">Profil</button>
-        </div>
-
         <!-- TAB: DASHBOARD OVERVIEW -->
         <div id="tab-overview" class="tab-content active">
             <div class="card">
@@ -484,19 +475,6 @@ $qrisPayments = mysqli_fetch_all(mysqli_query($conn, "
                             </div>
                         </div>
 
-                        <!-- Tombol Edit Profil & Tombol Ganti Password (Mengarahkan ke halaman profil utama) -->
-                        <div class="profile-header-actions">
-                            <a href="../profil.php" class="btn btn-primary">
-                                <span class="material-symbols-outlined">edit</span>
-                                Edit Profil
-                            </a>
-
-                            <a href="../profil.php" class="btn btn-outline">
-                                <span class="material-symbols-outlined">key</span>
-                                Ganti Password
-                            </a>
-                        </div>
-                    </div>
 
                     <!-- INFORMASI AKUN (Format Label : Value dengan Aligned Colons dan Thin Dividers) -->
                     <div class="profile-card-body">
