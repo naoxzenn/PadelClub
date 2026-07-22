@@ -223,6 +223,63 @@ if ($check_bookings) {
     }
 }
 
+// ---- MIGRASI TABEL OPERATING_HOURS & HOLIDAYS ----
+mysqli_query($conn, "
+CREATE TABLE IF NOT EXISTS `operating_hours` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `day_of_week` TINYINT(4) NOT NULL COMMENT '1=Senin ... 7=Minggu',
+  `open_time` TIME NOT NULL,
+  `close_time` TIME NOT NULL,
+  `open_time_2` TIME NULL,
+  `close_time_2` TIME NULL,
+  `is_open` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY `uq_day_of_week` (`day_of_week`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+");
+
+$ophours_cols_res = mysqli_query($conn, "SHOW COLUMNS FROM operating_hours");
+if ($ophours_cols_res) {
+    $ophours_cols = [];
+    while ($col = mysqli_fetch_assoc($ophours_cols_res)) {
+        $ophours_cols[] = $col['Field'];
+    }
+    if (!in_array('open_time_2', $ophours_cols)) {
+        mysqli_query($conn, "ALTER TABLE operating_hours ADD COLUMN open_time_2 TIME NULL AFTER close_time");
+    }
+    if (!in_array('close_time_2', $ophours_cols)) {
+        mysqli_query($conn, "ALTER TABLE operating_hours ADD COLUMN close_time_2 TIME NULL AFTER open_time_2");
+    }
+}
+
+$check_ophours = mysqli_query($conn, "SELECT COUNT(*) as cnt FROM operating_hours");
+if ($check_ophours) {
+    $row_ophours = mysqli_fetch_assoc($check_ophours);
+    if ((int)$row_ophours['cnt'] === 0) {
+        mysqli_query($conn, "INSERT INTO `operating_hours` (`day_of_week`, `open_time`, `close_time`, `is_open`) VALUES
+            (1, '07:00:00', '22:00:00', 1),
+            (2, '07:00:00', '22:00:00', 1),
+            (3, '07:00:00', '22:00:00', 1),
+            (4, '07:00:00', '22:00:00', 1),
+            (5, '07:00:00', '22:00:00', 1),
+            (6, '06:00:00', '23:00:00', 1),
+            (7, '06:00:00', '23:00:00', 1)
+        ");
+    }
+}
+
+mysqli_query($conn, "
+CREATE TABLE IF NOT EXISTS `holidays` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `holiday_date` DATE NOT NULL UNIQUE,
+  `title` VARCHAR(255) NOT NULL,
+  `description` TEXT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+");
+
 // ---- HELPER SINKRONISASI PEMBAYARAN DAN STATUS BOOKING ----
 if (!function_exists('updateBookingVerification')) {
     function updateBookingVerification($conn, $booking_id, $status, $verifier_id = null, $sendEmail = true, $metode_bayar = null, $cashier_id = null) {
@@ -414,6 +471,59 @@ if ($fallback_token_res && mysqli_num_rows($fallback_token_res) > 0) {
         $t = bin2hex(random_bytes(32));
         $now = date('Y-m-d H:i:s');
         mysqli_query($conn, "UPDATE bookings SET checkin_token = '$t', checkin_generated_at = '$now' WHERE id = $bid AND (checkin_token IS NULL OR checkin_token = '')");
+    }
+}
+
+/**
+ * Helper Global: Format durasi booking menjadi jam dan menit yang ramah pengguna
+ * Contoh:
+ * 180 menit -> 3 Jam
+ * 177 menit -> 2 Jam 57 Menit
+ * 150 menit -> 2 Jam 30 Menit
+ * 60 menit  -> 1 Jam
+ * 45 menit  -> 45 Menit
+ * 30 menit  -> 30 Menit
+ * 
+ * @param mixed $param1 Total menit (int/float), float jam desimal, atau jam_mulai (string)
+ * @param string|null $jamSelesai Jam selesai (string) jika param1 adalah jam_mulai
+ * @return string Output terformat
+ */
+if (!function_exists('formatDurasi')) {
+    function formatDurasi($param1, $jamSelesai = null) {
+        $totalMenit = 0;
+
+        if ($jamSelesai !== null && !empty($param1)) {
+            // Evaluasi jam_mulai dan jam_selesai
+            $t1 = strtotime((string)$param1);
+            $t2 = strtotime((string)$jamSelesai);
+            if ($t1 !== false && $t2 !== false && $t2 > $t1) {
+                $totalMenit = (int)round(($t2 - $t1) / 60);
+            }
+        } elseif (is_numeric($param1)) {
+            $val = (float)$param1;
+            // Jika angka <= 24, anggap jam desimal (misal 2.95 jam = 177 menit, 1.5 jam = 90 menit)
+            // Jika angka > 24, anggap menit langsung (misal 177 menit, 180 menit)
+            if ($val <= 24.0) {
+                $totalMenit = (int)round($val * 60);
+            } else {
+                $totalMenit = (int)round($val);
+            }
+        }
+
+        if ($totalMenit <= 0) {
+            return '0 Menit';
+        }
+
+        $jam = (int)floor($totalMenit / 60);
+        $menit = (int)($totalMenit % 60);
+
+        if ($jam > 0 && $menit > 0) {
+            return $jam . ' Jam ' . $menit . ' Menit';
+        } elseif ($jam > 0) {
+            return $jam . ' Jam';
+        } else {
+            return $menit . ' Menit';
+        }
     }
 }
 ?>

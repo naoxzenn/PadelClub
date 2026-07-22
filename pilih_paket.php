@@ -164,7 +164,7 @@ if ($raket_preview) $total_preview += HARGA_SEWA_RAKET;
                     </div>
                     <div class="detail-row">
                         <span class="label">Durasi</span>
-                        <span class="value"><?= $durasi_jam ?> jam</span>
+                        <span class="value"><?= formatDurasi($draft['jam_mulai'], $draft['jam_selesai']) ?></span>
                     </div>
                     <div class="detail-row">
                         <span class="label">Harga/Jam</span>
@@ -297,6 +297,7 @@ const courtName = <?= json_encode($court['nama_lapangan']) ?>;
 const tanggal   = <?= json_encode(date('d F Y', strtotime($draft['tanggal']))) ?>;
 const jamMulai  = <?= json_encode($draft['jam_mulai']) ?>;
 const jamSelesai= <?= json_encode($draft['jam_selesai']) ?>;
+const durasiText= <?= json_encode(formatDurasi($draft['jam_mulai'], $draft['jam_selesai'])) ?>;
 
 let createdBookingId = null;
 
@@ -327,7 +328,7 @@ function showBookingConfirmModal() {
         ['Paket',     paketLabel],
         ['Tanggal',   tanggal],
         ['Jam',       jamMulai + ' – ' + jamSelesai],
-        ['Durasi',    durasiJam + ' jam'],
+        ['Durasi',    durasiText],
         ['Sewa Raket',raket ? 'Ya (+' + formatRp(hargaRaket) + ')' : 'Tidak'],
     ];
 

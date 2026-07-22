@@ -386,28 +386,15 @@ if (isset($_SESSION['user_id'])) {
 
                 <script>
                     // ── Global Logout Confirmation Dialog ─────────────────────────────
+                    let targetLogoutUrl = '';
                     function confirmLogout(logoutUrl) {
-                        if (typeof Swal !== 'undefined') {
-                            Swal.fire({
-                                title: 'Konfirmasi Logout',
-                                text: 'Apakah Anda yakin ingin logout?',
-                                icon: 'warning',
-                                showCancelButton: true,
-                                confirmButtonColor: '#EF4444',
-                                cancelButtonColor: '#64748B',
-                                confirmButtonText: 'Logout',
-                                cancelButtonText: 'Batal',
-                                reverseButtons: true,
-                                focusCancel: true
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    window.location.href = logoutUrl;
-                                }
-                            });
-                        } else {
-                            if (confirm('Konfirmasi Logout\n\nApakah Anda yakin ingin logout?')) {
-                                window.location.href = logoutUrl;
-                            }
+                        targetLogoutUrl = logoutUrl;
+                        openModal('modal-logout-confirm');
+                    }
+
+                    function executeLogout() {
+                        if (targetLogoutUrl) {
+                            window.location.href = targetLogoutUrl;
                         }
                     }
 
@@ -490,3 +477,25 @@ if (isset($_SESSION['user_id'])) {
                         }
                     });
                 </script>
+
+<!-- GLOBAL MODAL — LOGOUT CONFIRMATION -->
+<div class="modal-backdrop" id="modal-logout-confirm" role="dialog" aria-modal="true" aria-labelledby="modal-logout-title" style="display:none; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(8px); z-index: 99999;">
+    <div class="modal-box" style="background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--radius-lg); max-width: 420px; width: 90%; text-align: center; padding: 32px 24px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6); position: relative; font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;">
+        <button class="modal-close" onclick="closeModal('modal-logout-confirm')" aria-label="Tutup" style="position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); color: #94A3B8; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);">&times;</button>
+
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--green), var(--blue)); color: #ffffff; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; box-shadow: 0 8px 20px rgba(14, 165, 233, 0.3);">
+            <span class="material-symbols-outlined" style="font-size: 2.2rem;">logout</span>
+        </div>
+
+        <h3 id="modal-logout-title" style="font-size: 1.35rem; font-weight: 800; color: #F8FAFC; margin: 0 0 8px 0;">Konfirmasi Logout</h3>
+        <p style="font-size: 0.92rem; color: #94A3B8; margin: 0 0 28px 0; line-height: 1.5;">Apakah Anda yakin ingin keluar dari sesi akun PadelClub Anda?</p>
+
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button class="btn btn-outline" onclick="closeModal('modal-logout-confirm')" style="border-radius: var(--radius-full); padding: 10px 24px; font-weight: 600; color: #F8FAFC; border-color: rgba(255,255,255,0.2); flex: 1;">Batal</button>
+            <button class="btn" onclick="executeLogout()" style="background: linear-gradient(135deg, var(--green), var(--blue)); color: #ffffff; border: none; border-radius: var(--radius-full); padding: 10px 24px; font-weight: 700; box-shadow: var(--shadow-glow); flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;">
+                <span class="material-symbols-outlined" style="font-size: 1.1rem;">logout</span>
+                Logout
+            </button>
+        </div>
+    </div>
+</div>

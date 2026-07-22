@@ -61,8 +61,8 @@
                         <span class="value"><?= date('d F Y', strtotime($tanggal_booking)) ?></span>
                     </div>
                     <div class="details-row">
-                        <span class="label">Jam</span>
-                        <span class="value"><?= substr($jam_mulai, 0, 5) ?> - <?= substr($jam_selesai, 0, 5) ?></span>
+                        <span class="label">Jam &amp; Durasi</span>
+                        <span class="value"><?= substr($jam_mulai, 0, 5) ?> - <?= substr($jam_selesai, 0, 5) ?> (<?= formatDurasi($jam_mulai, $jam_selesai) ?>)</span>
                     </div>
                     <div class="details-row">
                         <span class="label">Total Pembayaran</span>

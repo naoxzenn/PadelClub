@@ -15,6 +15,8 @@
 
 require_once __DIR__ . '/../../config/koneksi.php';
 require_once __DIR__ . '/../../models/BookingModel.php';
+require_once __DIR__ . '/../../helpers/OperatingHoursHelper.php';
+require_once __DIR__ . '/../../helpers/HolidayHelper.php';
 require_once __DIR__ . '/../config/ApiResponse.php';
 require_once __DIR__ . '/../config/ApiAuth.php';
 
@@ -176,6 +178,17 @@ if ($method === 'POST') {
     // jam_selesai harus setelah jam_mulai
     if ($jamSelesaiObj <= $jamMulaiObj) {
         ApiResponse::error('jam_selesai harus lebih besar dari jam_mulai.');
+    }
+
+    // ---- Validasi Hari Libur (Holidays) & Jam Operasional (Operating Hours) ----
+    $holidayInfo = HolidayHelper::getHolidayInfo($tanggal, $pdo);
+    if ($holidayInfo['is_holiday']) {
+        ApiResponse::error('Booking tidak dapat dilakukan. Venue tutup karena: ' . $holidayInfo['title']);
+    }
+
+    $validTimes = OperatingHoursHelper::validateBookingTimes($tanggal, $jamMulai, $jamSelesai, $pdo);
+    if (!$validTimes['valid']) {
+        ApiResponse::error($validTimes['message']);
     }
 
     // Hitung durasi dalam jam (untuk kalkulasi harga)

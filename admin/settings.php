@@ -181,6 +181,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             }
         </style>
 
+        <!-- SECTION: JADWAL & OPERASIONAL VENUE -->
+        <div style="margin-top: 12px; margin-bottom: 24px;">
+            <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--navy); margin-bottom: 6px;">Jadwal &amp; Operasional Venue</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Kelola jam buka-tutup harian dan daftar hari libur venue untuk validasi reservasi.</p>
+        </div>
+
+        <div class="db-management-grid" style="margin-bottom: 32px;">
+            <!-- 1. Jam Operasional -->
+            <div class="card db-card">
+                <div class="db-card-icon icon-blue">
+                    <span class="material-symbols-outlined">schedule</span>
+                </div>
+                <div class="db-card-content">
+                    <h3>Jam Operasional</h3>
+                    <p>Kelola jam buka dan tutup venue per hari.</p>
+                </div>
+                <a href="operating_hours.php" class="btn btn-primary btn-db-action">
+                    <span class="material-symbols-outlined">tune</span> Kelola
+                </a>
+            </div>
+
+            <!-- 2. Hari Libur -->
+            <div class="card db-card">
+                <div class="db-card-icon icon-amber">
+                    <span class="material-symbols-outlined">event_busy</span>
+                </div>
+                <div class="db-card-content">
+                    <h3>Hari Libur</h3>
+                    <p>Kelola tanggal venue tutup / hari libur.</p>
+                </div>
+                <a href="holidays.php" class="btn btn-primary btn-db-action">
+                    <span class="material-symbols-outlined">tune</span> Kelola
+                </a>
+            </div>
+        </div>
+
         <div style="margin-top: 12px; margin-bottom: 24px;">
             <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--navy); margin-bottom: 6px;">Manajemen Database</h2>
             <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Kelola proses backup, restore, export, serta konfigurasi database aplikasi.</p>

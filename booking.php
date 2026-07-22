@@ -13,6 +13,8 @@ if ($_SESSION['role'] !== 'customer') {
     exit;
 }
 require_once __DIR__ . '/config/koneksi.php';
+require_once __DIR__ . '/helpers/OperatingHoursHelper.php';
+require_once __DIR__ . '/helpers/HolidayHelper.php';
 /** @var mysqli $conn */
 
 $pageTitle = 'Booking Lapangan';
@@ -38,6 +40,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     elseif ($tanggal < date('Y-m-d')) $errors[] = 'Tanggal booking tidak boleh di masa lalu.';
     if (empty($jam_mulai) || empty($jam_selesai)) $errors[] = 'Jam mulai dan jam selesai wajib diisi.';
     elseif ($jam_selesai <= $jam_mulai) $errors[] = 'Jam selesai harus lebih dari jam mulai.';
+
+    // Validasi Hari Libur (Holidays) & Jam Operasional (Operating Hours)
+    if (empty($errors) && !empty($tanggal)) {
+        // 1. Cek Hari Libur
+        $holiday = HolidayHelper::getHolidayInfo($tanggal, $pdo);
+        if ($holiday['is_holiday']) {
+            $errors[] = 'Booking tidak dapat dilakukan. Venue tutup karena: ' . htmlspecialchars($holiday['title']);
+        } else {
+            // 2. Cek Operating Hours
+            $validTimes = OperatingHoursHelper::validateBookingTimes($tanggal, $jam_mulai, $jam_selesai, $pdo);
+            if (!$validTimes['valid']) {
+                $errors[] = $validTimes['message'];
+            }
+        }
+    }
 
     if (empty($errors)) {
         // Cek konflik booking
@@ -83,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <section class="section">
     <div class="container">
-        <div style="max-width: 600px; margin: 0 auto;">
+        <div style="max-width: 600px; width: 100%; margin: 0 auto;">
             <div class="card">
                 <h2>Form Booking</h2>
 

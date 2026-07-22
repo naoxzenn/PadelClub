@@ -42,10 +42,10 @@ textarea,
 table,
 th,
 td {
-    transition: background-color 0.25s ease, 
-                color 0.25s ease, 
-                border-color 0.25s ease, 
-                box-shadow 0.25s ease !important;
+    transition: background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1), 
+                color 0.35s cubic-bezier(0.4, 0, 0.2, 1), 
+                border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1), 
+                box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 /* ── Theme Toggle Button (Guest Navbar) ─────────────────────────────────── */
@@ -60,7 +60,10 @@ td {
     justify-content: center;
     cursor: pointer;
     color: var(--text-muted);
-    transition: all 0.25s ease;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     margin-right: 8px;
     padding: 0;
 }
@@ -86,7 +89,7 @@ td {
     font-size: 0.9rem;
     font-weight: 500;
     border-radius: var(--radius-md);
-    transition: all 0.25s ease;
+    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     margin-bottom: 4px;
 }
 .sidebar-theme-toggle-btn:hover {
@@ -614,5 +617,28 @@ td {
 
 .dark-mode kbd {
     background: #334155 !important;
+    color: #F8FAFC !important;
+}
+
+/* Standalone Modals (Operating Hours & Holidays) — Dark Mode */
+.dark-mode .ophours-modal-dialog,
+[data-theme="dark"] .ophours-modal-dialog,
+.dark-mode .holiday-modal-dialog,
+[data-theme="dark"] .holiday-modal-dialog {
+    background: #1b2432 !important;
+    border-color: #334155 !important;
+    color: #F8FAFC !important;
+}
+
+.dark-mode .ophours-modal-dialog input,
+[data-theme="dark"] .ophours-modal-dialog input,
+.dark-mode .holiday-modal-dialog input,
+[data-theme="dark"] .holiday-modal-dialog input,
+.dark-mode .ophours-modal-dialog textarea,
+[data-theme="dark"] .ophours-modal-dialog textarea,
+.dark-mode .holiday-modal-dialog textarea,
+[data-theme="dark"] .holiday-modal-dialog textarea {
+    background: #0F172A !important;
+    border-color: #334155 !important;
     color: #F8FAFC !important;
 }

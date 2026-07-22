@@ -40,10 +40,7 @@ $metodeBayar = $payInfo['metode_bayar'] ?? '-';
 $receiptNumber = $payInfo['receipt_number'] ?? '-';
 
 // Duration calculation
-$start = new DateTime($booking['jam_mulai']);
-$end = new DateTime($booking['jam_selesai']);
-$diff = $start->diff($end);
-$durasi = $diff->h . ' jam' . ($diff->i > 0 ? ' ' . $diff->i . ' menit' : '');
+$durasi = formatDurasi($booking['jam_mulai'], $booking['jam_selesai']);
 
 // Back URL based on role
 $backUrl = ($_SESSION['role'] === 'customer') ? 'dashboarduser.php' : 'admin/bookings.php';
@@ -62,7 +59,7 @@ include __DIR__ . '/includes/header.php';
     <!-- Back Button -->
     <div style="margin-bottom: 24px;">
         <a href="<?= $backUrl ?>"
-            style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); transition: color 0.2s;"
+            style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);"
             onmouseover="this.style.color='var(--blue)'" onmouseout="this.style.color='var(--text-muted)'">
             <span class="material-symbols-outlined" style="font-size: 1.1rem;">arrow_back</span>
             <?= $backLabel ?>

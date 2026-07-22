@@ -177,6 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!$payment || $payment['status_veri
 }
 
 $durasi = (strtotime($booking['jam_selesai']) - strtotime($booking['jam_mulai'])) / 3600;
+$durasiFormatted = formatDurasi($booking['jam_mulai'], $booking['jam_selesai']);
 
 // [NEW] Tentukan apakah booking masih boleh dibatalkan
 $bisaDibatalkan = in_array($booking['status'], ['pending', 'menunggu'], true);
@@ -226,7 +227,7 @@ $bisaDibatalkan = in_array($booking['status'], ['pending', 'menunggu'], true);
                     </div>
                     <div class="detail-row">
                         <span class="label">Jam</span>
-                        <span class="value"><?= $booking['jam_mulai'] ?> – <?= $booking['jam_selesai'] ?> (<?= $durasi ?> jam)</span>
+                        <span class="value"><?= $booking['jam_mulai'] ?> – <?= $booking['jam_selesai'] ?> (<?= $durasiFormatted ?>)</span>
                     </div>
                     <div class="detail-row">
                         <span class="label">Paket</span>
@@ -382,7 +383,7 @@ $bisaDibatalkan = in_array($booking['status'], ['pending', 'menunggu'], true);
                                             <div style="display:flex; justify-content:space-between; margin-bottom: 6px;"><span style="color:var(--text-muted);">Lapangan:</span><strong><?= htmlspecialchars($booking['nama_lapangan']) ?></strong></div>
                                             <div style="display:flex; justify-content:space-between; margin-bottom: 6px;"><span style="color:var(--text-muted);">Tanggal:</span><strong><?= date('d M Y', strtotime($booking['tanggal_booking'])) ?></strong></div>
                                             <div style="display:flex; justify-content:space-between; margin-bottom: 6px;"><span style="color:var(--text-muted);">Jam:</span><strong><?= substr($booking['jam_mulai'],0,5) ?> - <?= substr($booking['jam_selesai'],0,5) ?> WIB</strong></div>
-                                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;"><span style="color:var(--text-muted);">Durasi:</span><strong><?= $durasi ?> Jam</strong></div>
+                                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;"><span style="color:var(--text-muted);">Durasi:</span><strong><?= $durasiFormatted ?></strong></div>
                                             <div style="display:flex; justify-content:space-between; border-top: 1px solid var(--border); padding-top:6px; margin-top:4px;"><span style="color:var(--text-muted); font-weight:bold;">Total Pembayaran:</span><strong style="color: #0EA5E9; font-size: 1.05rem;">Rp <?= number_format($booking['total_harga'], 0, ',', '.') ?></strong></div>
                                         </div>
                                     </div>
@@ -513,7 +514,7 @@ $bisaDibatalkan = in_array($booking['status'], ['pending', 'menunggu'], true);
                 </div>
                 <div class="detail-row">
                     <span class="label">Jam Main</span>
-                    <span class="value"><?= $booking['jam_mulai'] ?> – <?= $booking['jam_selesai'] ?> (<?= $durasi ?> jam)</span>
+                    <span class="value"><?= $booking['jam_mulai'] ?> – <?= $booking['jam_selesai'] ?> (<?= $durasiFormatted ?>)</span>
                 </div>
                 <div class="detail-row">
                     <span class="label">Paket</span>

@@ -253,13 +253,7 @@ ob_start();
                             style="font-size: 10px; color: #64748b;"><?= date('d/m/Y', strtotime($data['tanggal_booking'])) ?>
                             | <?= substr($data['jam_mulai'], 0, 5) ?> - <?= substr($data['jam_selesai'], 0, 5) ?></span>
                     </td>
-                    <?php
-                    $mulai = new DateTime($data['jam_mulai']);
-                    $selesai = new DateTime($data['jam_selesai']);
-                    $diff = $mulai->diff($selesai);
-                    $durasi = $diff->h + ($diff->i / 60);
-                    ?>
-                    <td style="text-align: right; white-space: nowrap;"><?= $durasi ?> jam x Rp
+                    <td style="text-align: right; white-space: nowrap;"><?= formatDurasi($data['jam_mulai'], $data['jam_selesai']) ?> x Rp
                         <?= number_format($data['harga_per_jam'], 0, ',', '.') ?></td>
                     <td style="text-align: right;">Rp <?= number_format($data['total_harga'], 0, ',', '.') ?></td>
                 </tr>

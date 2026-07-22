@@ -173,7 +173,7 @@ p {
     background: rgba(14, 165, 233, 0.08);
     color: var(--blue);
     /* Transition untuk hover */
-    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    transition: background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1), color 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ---- Size modifiers ---- */
@@ -374,7 +374,7 @@ p {
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: var(--shadow-sm);
-    transition: transform .3s, box-shadow .3s;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .court-card:hover {
@@ -434,7 +434,7 @@ p {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform .5s;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .court-card:hover .court-card-img-wrap img {
@@ -703,7 +703,7 @@ tbody tr:hover {
     font-weight: 600;
     font-size: .88rem;
     cursor: pointer;
-    transition: all .2s;
+    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tab-btn:hover {
@@ -903,7 +903,7 @@ tbody tr:hover {
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 28px;
-    transition: border-color .25s, transform .25s;
+    transition: border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .feature-card:hover {
@@ -1009,7 +1009,7 @@ tbody tr:hover {
 .fade-up {
     opacity: 0;
     transform: translateY(20px);
-    transition: all .6s ease-out;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .fade-up.visible {
@@ -1030,7 +1030,7 @@ tbody tr:hover {
     justify-content: center;
     padding: 20px;
     opacity: 0;
-    transition: opacity .3s ease;
+    transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .modal-backdrop.show {
@@ -1046,7 +1046,7 @@ tbody tr:hover {
     max-height: 90vh;
     overflow-y: auto;
     transform: scale(.92) translateY(16px);
-    transition: transform .3s cubic-bezier(.34, 1.56, .64, 1), opacity .3s ease;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 0;
 }
 
@@ -1367,12 +1367,12 @@ tbody tr:hover {
     border-radius: var(--radius-md);
     font-size: 0.9rem;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-nav a .material-symbols-outlined {
     font-size: 1.25rem;
-    transition: color 0.2s;
+    transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-nav a:hover {
@@ -2010,7 +2010,7 @@ tbody tr:hover {
     font-weight: 600;
     font-size: .95rem;
     cursor: pointer;
-    transition: all .25s cubic-bezier(.4, 0, .2, 1);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1), color 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     text-align: center;
 }
 
@@ -2110,7 +2110,7 @@ tbody tr:hover {
     border: 2px solid var(--blue);
     color: var(--blue);
     background: transparent;
-    transition: all .25s ease;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1), color 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     display: inline-flex;
     align-items: center;
 }
@@ -2425,7 +2425,7 @@ tbody tr:hover {
     border-radius: var(--radius-lg);
     padding: 32px;
     box-shadow: var(--shadow-sm);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     height: 100%;
 }
 
@@ -2453,9 +2453,9 @@ tbody tr:hover {
     font-size: var(--icon-font-lg);
     margin-bottom: 20px;
     overflow: hidden;
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-                background-color 0.25s ease,
-                color 0.25s ease;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                color 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .padel-card:hover .icon-badge {
@@ -3290,7 +3290,7 @@ textarea.invalid {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    transition: all 0.2s;
+    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
 }
 
@@ -4039,7 +4039,7 @@ textarea.invalid {
     display: flex;
     align-items: center;
     gap: 6px;
-    transition: all 0.2s;
+    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
 }
 
@@ -4160,7 +4160,7 @@ textarea.invalid {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: all 0.2s;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     letter-spacing: 0.02em;
 }
 
@@ -4529,7 +4529,7 @@ textarea.invalid {
     color: var(--navy);
     cursor: pointer;
     overflow: hidden;
-    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .topbar-hamburger:hover {
     background: rgba(14, 165, 233, 0.08);
@@ -4539,7 +4539,7 @@ textarea.invalid {
 .topbar-hamburger .material-symbols-outlined {
     font-size: var(--icon-font-sm);
     /* Override theme.css transition untuk hanya animate transform */
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 .topbar-hamburger.active .material-symbols-outlined {
     transform: rotate(90deg);
@@ -4598,7 +4598,7 @@ textarea.invalid {
     border: 2px solid rgba(14, 165, 233, 0.2);
     overflow: hidden;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .topbar-avatar:hover {
     transform: scale(1.05);
@@ -4710,9 +4710,9 @@ textarea.invalid {
     box-shadow: var(--shadow-sm);
     text-decoration: none;
     color: inherit;
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                border-color 0.25s ease;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
 }
@@ -4772,7 +4772,7 @@ textarea.invalid {
     font-weight: 700;
     color: var(--blue);
     margin-top: 4px;
-    transition: gap 0.2s ease, color 0.2s ease;
+    transition: gap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .quick-action-card:hover .quick-action-footer {

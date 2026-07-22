@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 20 Jul 2026 pada 03.52
+-- Waktu pembuatan: 20 Jul 2026 pada 04.42
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -84,23 +84,24 @@ CREATE TABLE `bookings` (
 --
 
 INSERT INTO `bookings` (`id`, `user_id`, `court_id`, `tanggal_booking`, `jam_mulai`, `jam_selesai`, `total_harga`, `paket`, `sewa_raket`, `catatan`, `status`, `booking_code`, `checkin_token`, `checkin_generated_at`, `payment_status`, `checkin_status`, `checkin_time`, `verified_at`, `verified_by`, `checkin_ip`, `checkin_browser`, `checkin_by`, `cancelled_at`, `created_at`) VALUES
-(1, 2, 2, '2026-05-25', '16:00:00', '20:00:00', 600000.00, '', 0, '', 'confirmed', 'BK2B9335F8491697', NULL, NULL, 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-05-13 04:41:00'),
-(2, 3, 2, '2026-06-03', '20:00:00', '22:00:00', 350000.00, '', 1, '', 'confirmed', 'BK74950CB4B9CE2B', NULL, NULL, 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-05-13 04:48:41'),
-(3, 3, 1, '2026-05-20', '18:00:00', '20:00:00', 300000.00, '', 0, '', 'confirmed', 'BKD05B1C0A7A5899', NULL, NULL, 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-05-13 07:03:52'),
-(4, 3, 2, '2026-05-21', '20:00:00', '22:00:00', 350000.00, '', 1, '', 'confirmed', 'BK87E563C250964E', NULL, NULL, 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-05-13 07:05:19'),
-(5, 3, 1, '2026-05-20', '20:00:00', '22:00:00', 300000.00, '', 0, '', 'confirmed', 'BK06614591F0C5B8', NULL, NULL, 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-05-13 07:25:24'),
+(1, 2, 2, '2026-05-25', '16:00:00', '20:00:00', 600000.00, '', 0, '', 'confirmed', 'BK2B9335F8491697', '9e8435ef1310c2bd018a5f6367646be32bc135f6676f84dc6bdb9f5eebd93e35', '2026-07-20 03:54:17', 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-05-13 04:41:00'),
+(2, 3, 2, '2026-06-03', '20:00:00', '22:00:00', 350000.00, '', 1, '', 'confirmed', 'BK74950CB4B9CE2B', '412994dc721d5f85f3d0d0bd875f3bf17619f37cba4c1e96a963f5665c0b33f6', '2026-07-20 03:54:17', 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-05-13 04:48:41'),
+(3, 3, 1, '2026-05-20', '18:00:00', '20:00:00', 300000.00, '', 0, '', 'confirmed', 'BKD05B1C0A7A5899', '65f348864f6edfce01da5edbaafe11827e4288ab871baffaddd1961ed2c333d3', '2026-07-20 03:54:17', 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-05-13 07:03:52'),
+(4, 3, 2, '2026-05-21', '20:00:00', '22:00:00', 350000.00, '', 1, '', 'confirmed', 'BK87E563C250964E', '94920444e21eefadb0103e969e8a6b38da2640e5ec6fab96cca30d991cf156cd', '2026-07-20 03:54:17', 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-05-13 07:05:19'),
+(5, 3, 1, '2026-05-20', '20:00:00', '22:00:00', 300000.00, '', 0, '', 'confirmed', 'BK06614591F0C5B8', 'fcfe8a16ae827c7400b134c525e83fa3d5bde9c4e95d3376cadfd3518d65d9af', '2026-07-20 03:54:17', 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-05-13 07:25:24'),
 (6, 4, 3, '2026-06-27', '20:30:00', '22:30:00', 200000.00, '', 0, '', 'cancelled', NULL, NULL, NULL, 'Pending', 'Not Checked In', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-06-27 10:15:17'),
 (7, 4, 2, '2026-06-29', '18:00:00', '21:30:00', 525000.00, '', 0, '', 'cancelled', NULL, NULL, NULL, 'Pending', 'Not Checked In', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-06-27 10:30:26'),
 (8, 4, 3, '2026-06-29', '18:00:00', '20:00:00', 200000.00, '', 0, '', 'cancelled', NULL, NULL, NULL, 'Pending', 'Not Checked In', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-06-27 10:32:36'),
-(9, 4, 2, '2026-06-29', '15:00:00', '19:00:00', 600000.00, '', 0, '', 'confirmed', 'BK3593F42730EE17', NULL, NULL, 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-06-27 10:44:03'),
-(10, 5, 1, '2026-07-28', '16:00:00', '20:45:00', 762500.00, '', 1, '', 'confirmed', 'BK6B43A3725A2EAD', NULL, NULL, 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-06-27 12:30:39'),
-(11, 9, 2, '2026-08-04', '08:45:00', '10:30:00', 262500.00, '', 0, '', 'confirmed', 'BK51D0FA1E152C2F', NULL, NULL, 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-07-08 07:01:42'),
-(12, 12, 1, '2026-10-01', '12:00:00', '16:00:00', 600000.00, '', 0, '', 'confirmed', 'BKBD613D57B14EB5', NULL, NULL, 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-07-15 14:35:43'),
-(13, 13, 2, '2026-07-22', '19:00:00', '22:00:00', 450000.00, '', 0, '', 'confirmed', 'BK335390D06E1AA7', NULL, NULL, 'Verified', 'Not Checked In', NULL, '2026-07-17 21:01:02', 10, NULL, NULL, NULL, NULL, '2026-07-17 18:38:55'),
-(14, 12, 1, '2026-07-23', '08:00:00', '12:00:00', 600000.00, '', 0, '', 'confirmed', 'BK5EDF088482D36C', NULL, NULL, 'Verified', 'Not Checked In', NULL, '2026-07-17 21:02:39', NULL, NULL, NULL, NULL, NULL, '2026-07-17 19:02:23'),
-(15, 13, 3, '2026-07-19', '09:00:00', '13:00:00', 400000.00, '', 0, '', 'confirmed', 'BKC2BF37334B9223', NULL, NULL, 'Verified', 'Checked In', '2026-07-19 08:21:58', '2026-07-17 21:45:34', NULL, '127.0.0.1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/12.0 Mobile/15A372 Safari/604.1', 11, NULL, '2026-07-17 19:45:19'),
-(16, 13, 2, '2026-07-19', '14:00:00', '19:00:00', 750000.00, '', 0, '', 'confirmed', 'BK2FCCDF157D24C3', NULL, NULL, 'Verified', 'Checked In', '2026-07-19 08:22:04', '2026-07-17 22:30:36', NULL, '127.0.0.1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/12.0 Mobile/15A372 Safari/604.1', 11, NULL, '2026-07-17 20:30:01'),
-(17, 12, 2, '2026-07-20', '19:00:00', '21:00:00', 300000.00, '', 0, '', 'confirmed', 'BK49AFCDA32F16FC', NULL, NULL, 'Verified', 'Not Checked In', NULL, '2026-07-19 16:42:13', NULL, NULL, NULL, NULL, NULL, '2026-07-19 14:41:50');
+(9, 4, 2, '2026-06-29', '15:00:00', '19:00:00', 600000.00, '', 0, '', 'confirmed', 'BK3593F42730EE17', 'e06edcef874b441488ce9f16e8634c17d150059ac06eac61ae4ac35ae1afbcbb', '2026-07-20 03:54:17', 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-06-27 10:44:03'),
+(10, 5, 1, '2026-07-28', '16:00:00', '20:45:00', 762500.00, '', 1, '', 'confirmed', 'BK6B43A3725A2EAD', 'a6c21b1d316631ea00645d712506c07a0c5e6a396f98fb1a4aecbb220f5c280f', '2026-07-20 03:54:17', 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-06-27 12:30:39'),
+(11, 9, 2, '2026-08-04', '08:45:00', '10:30:00', 262500.00, '', 0, '', 'confirmed', 'BK51D0FA1E152C2F', '8a2bd195e66fa53e7291a4fa511af330b4cb2ef47bb1443f0c070c210924204c', '2026-07-20 03:54:17', 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-07-08 07:01:42'),
+(12, 12, 1, '2026-10-01', '12:00:00', '16:00:00', 600000.00, '', 0, '', 'confirmed', 'BKBD613D57B14EB5', 'cb34cb4536833d5c52fb479842464f00cf8d76255e1e5e4cbf21a550184026ab', '2026-07-20 03:54:17', 'Verified', 'Not Checked In', NULL, '2026-07-17 18:40:59', NULL, NULL, NULL, NULL, NULL, '2026-07-15 14:35:43'),
+(13, 13, 2, '2026-07-22', '19:00:00', '22:00:00', 450000.00, '', 0, '', 'confirmed', 'BK335390D06E1AA7', '2b7101ec5929b8b0dd5753a3b262a984855fa9cd22e4e563a6b49cf6525e8d56', '2026-07-20 03:54:17', 'Verified', 'Not Checked In', NULL, '2026-07-17 21:01:02', 10, NULL, NULL, NULL, NULL, '2026-07-17 18:38:55'),
+(14, 12, 1, '2026-07-23', '08:00:00', '12:00:00', 600000.00, '', 0, '', 'confirmed', 'BK5EDF088482D36C', 'c2d6b16a293b7a197904ff18618bad7f7fc05c189935c46e83e7ea4b6be66e5d', '2026-07-20 03:54:17', 'Verified', 'Not Checked In', NULL, '2026-07-17 21:02:39', NULL, NULL, NULL, NULL, NULL, '2026-07-17 19:02:23'),
+(15, 13, 3, '2026-07-19', '09:00:00', '13:00:00', 400000.00, '', 0, '', 'confirmed', 'BKC2BF37334B9223', '0ce75946e09a5a95036d1540d7945a9d9944bd4f34cfc8e2a668f626a5b1c18f', '2026-07-20 03:54:17', 'Verified', 'Checked In', '2026-07-19 08:21:58', '2026-07-17 21:45:34', NULL, '127.0.0.1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/12.0 Mobile/15A372 Safari/604.1', 11, NULL, '2026-07-17 19:45:19'),
+(16, 13, 2, '2026-07-19', '14:00:00', '19:00:00', 750000.00, '', 0, '', 'confirmed', 'BK2FCCDF157D24C3', '5820f6544ae83fed6785458a34fc1146950cf0b4c76aa1942dac70e716187b3d', '2026-07-20 03:54:17', 'Verified', 'Checked In', '2026-07-19 08:22:04', '2026-07-17 22:30:36', NULL, '127.0.0.1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/12.0 Mobile/15A372 Safari/604.1', 11, NULL, '2026-07-17 20:30:01'),
+(17, 12, 2, '2026-07-20', '19:00:00', '21:00:00', 300000.00, '', 0, '', 'confirmed', 'BK49AFCDA32F16FC', 'f548000999573c61f73a10ef46be7e72cc110c2c5ac059b2367486476569d4ac', '2026-07-20 03:54:17', 'Verified', 'Not Checked In', NULL, '2026-07-19 16:42:13', NULL, NULL, NULL, NULL, NULL, '2026-07-19 14:41:50'),
+(18, 13, 1, '2026-07-20', '09:05:00', '12:00:00', 437500.00, '', 0, '', 'confirmed', 'BK6A2D4695704098', 'b5bda6282b4522e9b36ebd6acdb5576139395aca882d63d7d7f842932363a4fe', '2026-07-20 04:04:29', 'Verified', 'Not Checked In', NULL, '2026-07-20 04:04:29', NULL, NULL, NULL, NULL, NULL, '2026-07-20 02:04:17');
 
 -- --------------------------------------------------------
 
@@ -127,6 +128,37 @@ INSERT INTO `courts` (`id`, `nama_lapangan`, `tipe_lapangan`, `harga_per_jam`, `
 (2, 'Lapangan B', 'Indoor', 150000.00, 'Lapangan indoor standar dengan pencahayaan LED', 'aktif', '2026-05-13 04:33:07'),
 (3, 'Lapangan C', 'Outdoor', 100000.00, 'Lapangan outdoor dengan view taman yang indah', 'aktif', '2026-05-13 04:33:07'),
 (4, 'Lapangan D', 'Outdoor', 100000.00, 'Lapangan outdoor dengan permukaan artificial grass', 'aktif', '2026-05-13 04:33:07');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `holidays`
+--
+
+CREATE TABLE `holidays` (
+  `id` int(11) NOT NULL,
+  `holiday_date` date NOT NULL,
+  `holiday_name` varchar(150) NOT NULL,
+  `description` text DEFAULT NULL,
+  `is_closed` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `operating_hours`
+--
+
+CREATE TABLE `operating_hours` (
+  `id` int(11) NOT NULL,
+  `day_of_week` tinyint(4) NOT NULL COMMENT '1=Senin ... 7=Minggu',
+  `open_time` time NOT NULL,
+  `close_time` time NOT NULL,
+  `is_open` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -169,7 +201,8 @@ INSERT INTO `payments` (`id`, `booking_id`, `waktu_bayar`, `jumlah_bayar`, `meto
 (11, 14, '2026-07-18 02:02:39', 600000.00, 'QRIS', NULL, 'terverifikasi', 'paid', '2026-07-18 02:02:39', NULL, NULL, 1, '2026-07-17 19:02:39', '2026-07-17 19:37:50'),
 (12, 15, '2026-07-17 21:45:34', 400000.00, 'QRIS', NULL, 'terverifikasi', 'paid', '2026-07-17 21:45:34', NULL, 'REC-20260717-0015', 0, '2026-07-17 19:45:34', '2026-07-17 19:45:34'),
 (13, 16, '2026-07-17 22:30:36', 750000.00, 'QRIS', NULL, 'terverifikasi', 'paid', '2026-07-17 22:30:36', NULL, 'REC-20260717-0016', 0, '2026-07-17 20:30:36', '2026-07-17 20:30:36'),
-(14, 17, '2026-07-19 16:42:13', 300000.00, 'QRIS', NULL, 'terverifikasi', 'paid', '2026-07-19 16:42:13', NULL, 'REC-20260719-0017', 0, '2026-07-19 14:42:13', '2026-07-19 14:42:13');
+(14, 17, '2026-07-19 16:42:13', 300000.00, 'QRIS', NULL, 'terverifikasi', 'paid', '2026-07-19 16:42:13', NULL, 'REC-20260719-0017', 0, '2026-07-19 14:42:13', '2026-07-19 14:42:13'),
+(15, 18, '2026-07-20 04:04:29', 437500.00, 'QRIS', NULL, 'terverifikasi', 'paid', '2026-07-20 04:04:29', NULL, 'REC-20260720-0018', 0, '2026-07-20 02:04:29', '2026-07-20 02:04:29');
 
 -- --------------------------------------------------------
 
@@ -219,7 +252,7 @@ INSERT INTO `users` (`id`, `nama_lengkap`, `full_name`, `email`, `username`, `cl
 (10, 'kasir', 'kasir', 'padel@padelclub.com', NULL, NULL, '123456', '08269696969', '08269696969', 'kasir', NULL, NULL, 'local', 0, NULL, NULL, NULL, NULL, NULL, '2026-07-19 21:43:37', '2026-07-19 14:43:37', '2026-07-08 07:56:53'),
 (11, 'admin', 'admin', 'ambamin@padelclub.com', NULL, NULL, '123456', '0826789015', '0826789015', 'admin', NULL, NULL, 'local', 0, NULL, NULL, NULL, NULL, NULL, '2026-07-19 22:01:37', '2026-07-19 15:01:37', '2026-07-08 07:58:01'),
 (12, 'Zainl Zee', 'Zainl Zee', 'zainlzee52@gmail.com', NULL, NULL, '097605a25392277b618954e3fb5bd0cf', NULL, NULL, 'customer', '106968381419847277419', 'https://lh3.googleusercontent.com/a/ACg8ocIZM1I6iAe356kGv00_yuBcBZrQP3WJ9WJ2vQ_GJn-DnJ6hHw=s96-c', 'google', 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-18 09:36:03', '2026-07-15 07:30:23'),
-(13, 'Zaenal Arief', 'Zaenal Arief', 'zainlzee72@gmail.com', 'zznael', NULL, '$2y$10$upVtI4YzGeunNm3/eG8FIucFeQQ.n7BATbxwh07ABV64PcrcDO7Fe', '082233009810', '082233009810', 'customer', NULL, NULL, 'local', 1, NULL, '2026-07-17 19:36:54', NULL, NULL, NULL, '2026-07-19 22:02:54', '2026-07-19 15:02:54', '2026-07-17 17:35:25'),
+(13, 'Zaenal Arief', 'Zaenal Arief', 'zainlzee72@gmail.com', 'zznael', NULL, '$2y$10$upVtI4YzGeunNm3/eG8FIucFeQQ.n7BATbxwh07ABV64PcrcDO7Fe', '082233009810', '082233009810', 'customer', NULL, NULL, 'local', 1, NULL, '2026-07-17 19:36:54', NULL, NULL, NULL, '2026-07-20 09:03:25', '2026-07-20 02:03:25', '2026-07-17 17:35:25'),
 (14, 'Testing Customer', NULL, 'customer@MyPadel.com', 'testcustomer', NULL, '$2y$10$hEiYCR39i2Epm0Gr5vsHruDeeb4O7B3Gf2bcqqoJ7EpvVAWu/TNl.', '081234567890', NULL, 'customer', NULL, NULL, 'local', 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-18 13:49:33', '2026-07-20 05:00:00');
 
 --
@@ -247,6 +280,20 @@ ALTER TABLE `bookings`
 --
 ALTER TABLE `courts`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indeks untuk tabel `holidays`
+--
+ALTER TABLE `holidays`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_holiday` (`holiday_date`);
+
+--
+-- Indeks untuk tabel `operating_hours`
+--
+ALTER TABLE `operating_hours`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_day` (`day_of_week`);
 
 --
 -- Indeks untuk tabel `payments`
@@ -279,7 +326,7 @@ ALTER TABLE `backup_logs`
 -- AUTO_INCREMENT untuk tabel `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT untuk tabel `courts`
@@ -288,10 +335,22 @@ ALTER TABLE `courts`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
+-- AUTO_INCREMENT untuk tabel `holidays`
+--
+ALTER TABLE `holidays`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT untuk tabel `operating_hours`
+--
+ALTER TABLE `operating_hours`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT untuk tabel `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT untuk tabel `users`

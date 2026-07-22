@@ -71,7 +71,8 @@ ob_start();
     <meta charset="UTF-8">
     <title>Invoice PadelClub - <?= htmlspecialchars($code) ?></title>
     <style>
-        html, body {
+        html,
+        body {
             max-width: 100vw;
             overflow-x: hidden;
         }
@@ -290,7 +291,7 @@ ob_start();
             <div class="header-left">
                 <div class="logo">PadelClub</div>
                 <div class="company-info">
-                    Telp: +62 812-3456-7890 | Email: padelclub4.gmail.com
+                    Telp: +62 822 3300 9810 | Email: padelclub4.gmail.com
                 </div>
             </div>
             <div class="header-right">
@@ -307,7 +308,8 @@ ob_start();
             <tr>
                 <td class="label">Email / Telp</td>
                 <td class="value"><?= htmlspecialchars($booking['email']) ?> /
-                    <?= htmlspecialchars($booking['nomor_telepon'] ?? '-') ?></td>
+                    <?= htmlspecialchars($booking['nomor_telepon'] ?? '-') ?>
+                </td>
             </tr>
             <tr>
                 <td class="label">Tanggal Cetak</td>
@@ -333,8 +335,10 @@ ob_start();
                         <td>
                             <strong>Sewa Lapangan: <?= htmlspecialchars($booking['nama_lapangan']) ?></strong><br>
                             <small>Tanggal: <?= date('d/m/Y', strtotime($booking['tanggal_booking'])) ?> | Jam:
-                                <?= substr($booking['jam_mulai'], 0, 5) ?> - <?= substr($booking['jam_selesai'], 0, 5) ?>
-                                WIB</small>
+                                <?= substr($booking['jam_mulai'], 0, 5) ?> -
+                                <?= substr($booking['jam_selesai'], 0, 5) ?>
+                                WIB (Durasi:
+                                <?= formatDurasi($booking['jam_mulai'], $booking['jam_selesai']) ?>)</small>
                         </td>
                         <td><?= $booking['tipe_lapangan'] ?></td>
                         <td style="text-align: right;">Rp

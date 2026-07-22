@@ -86,17 +86,17 @@ $baseUrl = '';
                         Ikuti Kami</p>
                     <div style="display:flex; gap:10px;">
                         <a href="#"
-                            style="width:40px;height:40px;border-radius:var(--radius-full);background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.8);transition:background .2s;"
+                            style="width:40px;height:40px;border-radius:var(--radius-full);background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.8);transition:background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);"
                             aria-label="Instagram">
                             <span class="material-symbols-outlined" style="font-size:1.1rem;">photo_camera</span>
                         </a>
                         <a href="#"
-                            style="width:40px;height:40px;border-radius:var(--radius-full);background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.8);transition:background .2s;"
+                            style="width:40px;height:40px;border-radius:var(--radius-full);background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.8);transition:background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);"
                             aria-label="TikTok">
                             <span class="material-symbols-outlined" style="font-size:1.1rem;">videocam</span>
                         </a>
                         <a href="#"
-                            style="width:40px;height:40px;border-radius:var(--radius-full);background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.8);transition:background .2s;"
+                            style="width:40px;height:40px;border-radius:var(--radius-full);background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.8);transition:background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);"
                             aria-label="WhatsApp">
                             <span class="material-symbols-outlined" style="font-size:1.1rem;">chat</span>
                         </a>
