@@ -173,6 +173,7 @@ include __DIR__ . '/../includes/header.php';
     width: 100%;
     max-width: 480px;
     max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
     overflow-y: auto;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     border: 1px solid var(--border, #E2E8F0);

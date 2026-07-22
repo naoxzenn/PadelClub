@@ -148,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
 
-                    <div style="margin-top: 8px; display: flex; gap: 10px;">
+                    <div class="booking-actions">
                         <a href="index.php" class="btn btn-secondary">Kembali</a>
                         <button type="submit" class="btn btn-primary" id="btn-lanjut" style="flex: 1;">
                             Lanjut Pilih Paket &rarr;
